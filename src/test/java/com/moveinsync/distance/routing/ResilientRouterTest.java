@@ -138,6 +138,33 @@ class ResilientRouterTest {
     }
 
     @Test
+    void aFailedCallSucceedsOnItsRetry() {
+        AtomicInteger callNumber = new AtomicInteger();
+        RoutingProvider failsOnce = batch -> {
+            if (callNumber.incrementAndGet() == 1) {
+                throw new RoutingException("blip");
+            }
+            return provider.drivingMeters(batch);
+        };
+        ResilientRouter retrying = new ResilientRouter(failsOnce, cache, breaker, 10, 8);
+
+        RouteBatch batch = retrying.routeAll(List.of(request));
+
+        assertTrue(batch.meters().get(0) != null);
+        assertEquals(2, batch.providerCalls());
+        assertEquals(1, retrying.retryCount());
+        assertEquals(1, retrying.failureCount());
+    }
+
+    @Test
+    void aSuccessfulCallIsNotRepeated() {
+        RouteBatch batch = router.routeAll(List.of(request));
+        assertEquals(1, batch.providerCalls());
+        assertEquals(0, router.retryCount());
+        assertEquals(0, router.failureCount());
+    }
+
+    @Test
     void openBreakerMeansNoProviderCalls() {
         provider.setDown(true);
         for (int i = 0; i < 3; i++) {

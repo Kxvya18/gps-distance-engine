@@ -4,6 +4,7 @@ import com.moveinsync.distance.core.DistanceCalculator;
 import com.moveinsync.distance.model.RuleConfig;
 import com.moveinsync.distance.model.Segment;
 import com.moveinsync.distance.model.SegmentRule;
+import com.moveinsync.distance.model.TrackPoint;
 import com.moveinsync.distance.model.TripResult;
 import com.moveinsync.distance.routing.CircuitBreaker;
 import com.moveinsync.distance.routing.FakeRoutingProvider;
@@ -56,6 +57,102 @@ class TripAuditorTest {
             List<String> problems = auditor.audit(calculator.calculate(simulator.generate(i).evidence()));
             assertTrue(problems.isEmpty(), "trip " + i + ": " + problems);
         }
+    }
+
+    private static final double ONE_KM_IN_DEGREES = 0.008993;
+
+    private TrackPoint point(double kmNorth, long seconds) {
+        return new TrackPoint(12.9 + kmNorth * ONE_KM_IN_DEGREES, 77.6, seconds * 1000, TrackPoint.Source.PING);
+    }
+
+    // One segment from km 0 at time 0, to the given place and time.
+    private List<String> auditOne(double toKm, long seconds, long meters, SegmentRule rule, TripResult.Status status) {
+        Segment segment = new Segment(point(0, 0), point(toKm, seconds), meters, rule);
+        return auditor.audit(new TripResult("t", 1, meters, List.of(segment), status, 0));
+    }
+
+    @Test
+    void correctSegmentsOfEveryRulePass() {
+        assertTrue(auditOne(0.5, 60, 500, SegmentRule.SHORT_GAP_AERIAL, TripResult.Status.OK).isEmpty());
+        assertTrue(auditOne(0.1, 600, 100, SegmentRule.PARKED, TripResult.Status.OK).isEmpty());
+        assertTrue(auditOne(5, 600, 6500, SegmentRule.ROUTED, TripResult.Status.OK).isEmpty());
+        assertTrue(auditOne(5, 600, 7000, SegmentRule.PROVIDER_DOWN_ESTIMATE, TripResult.Status.DEGRADED).isEmpty());
+        assertTrue(auditOne(5, 600, 7000, SegmentRule.REJECTED_DISTANCE, TripResult.Status.NEEDS_REVIEW).isEmpty());
+        assertTrue(auditOne(5, 100, 5000, SegmentRule.REJECTED_SPEED, TripResult.Status.NEEDS_REVIEW).isEmpty());
+    }
+
+    @Test
+    void catchesAWrongShortGapLabel() {
+        assertFalse(auditOne(0.5, 100, 500, SegmentRule.SHORT_GAP_AERIAL, TripResult.Status.OK).isEmpty());
+    }
+
+    @Test
+    void catchesAParkedSegmentThatWasMoving() {
+        assertFalse(auditOne(5, 600, 5000, SegmentRule.PARKED, TripResult.Status.OK).isEmpty());
+    }
+
+    @Test
+    void catchesAWrongParkedDistance() {
+        assertFalse(auditOne(0.1, 600, 300, SegmentRule.PARKED, TripResult.Status.OK).isEmpty());
+    }
+
+    @Test
+    void catchesARouteOverTheLimit() {
+        assertFalse(auditOne(5, 600, 100_001, SegmentRule.ROUTED, TripResult.Status.OK).isEmpty());
+    }
+
+    @Test
+    void catchesARouteShorterThanTheStraightLine() {
+        assertFalse(auditOne(5, 600, 4000, SegmentRule.ROUTED, TripResult.Status.OK).isEmpty());
+    }
+
+    @Test
+    void catchesARouteThatShouldHaveBeenParked() {
+        assertFalse(auditOne(0.1, 600, 300, SegmentRule.ROUTED, TripResult.Status.OK).isEmpty());
+    }
+
+    @Test
+    void catchesAWrongEstimate() {
+        assertFalse(auditOne(5, 600, 9000, SegmentRule.PROVIDER_DOWN_ESTIMATE, TripResult.Status.DEGRADED).isEmpty());
+    }
+
+    @Test
+    void catchesAWrongRejectedDistance() {
+        assertFalse(auditOne(5, 600, 9000, SegmentRule.REJECTED_DISTANCE, TripResult.Status.NEEDS_REVIEW).isEmpty());
+    }
+
+    @Test
+    void catchesARejectedRouteOnAnOkTrip() {
+        assertFalse(auditOne(5, 600, 7000, SegmentRule.REJECTED_DISTANCE, TripResult.Status.OK).isEmpty());
+        assertFalse(auditOne(5, 100, 5000, SegmentRule.REJECTED_SPEED, TripResult.Status.OK).isEmpty());
+    }
+
+    @Test
+    void catchesASpeedRejectionWhenTheEstimateWasFine() {
+        assertFalse(auditOne(5, 600, 5000, SegmentRule.REJECTED_SPEED, TripResult.Status.NEEDS_REVIEW).isEmpty());
+    }
+
+    @Test
+    void catchesAWrongSpeedRejectionDistance() {
+        assertFalse(auditOne(5, 100, 7000, SegmentRule.REJECTED_SPEED, TripResult.Status.NEEDS_REVIEW).isEmpty());
+    }
+
+    @Test
+    void catchesTimeRunningBackwards() {
+        Segment segment = new Segment(point(0, 100), point(0, 50), 0, SegmentRule.SHORT_GAP_AERIAL);
+        assertFalse(auditor.audit(new TripResult("t", 1, 0, List.of(segment), TripResult.Status.OK, 0)).isEmpty());
+    }
+
+    @Test
+    void catchesSegmentsThatDoNotConnect() {
+        Segment first = new Segment(point(0, 0), point(0.1, 10), 100, SegmentRule.SHORT_GAP_AERIAL);
+        Segment second = new Segment(point(0.5, 20), point(0.6, 30), 100, SegmentRule.SHORT_GAP_AERIAL);
+        assertFalse(auditor.audit(new TripResult("t", 1, 200, List.of(first, second), TripResult.Status.OK, 0)).isEmpty());
+    }
+
+    @Test
+    void samePlaceAtTheSameInstantIsAValidShortGap() {
+        assertTrue(auditOne(0, 0, 0, SegmentRule.SHORT_GAP_AERIAL, TripResult.Status.OK).isEmpty());
     }
 
     @Test

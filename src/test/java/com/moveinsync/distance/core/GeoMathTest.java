@@ -18,6 +18,16 @@ class GeoMathTest {
     }
 
     @Test
+    void noTimeAndNoMovementIsZeroSpeed() {
+        assertEquals(0.0, GeoMath.speedKmh(0, 0));
+    }
+
+    @Test
+    void movementInNoTimeIsInfiniteSpeed() {
+        assertEquals(Double.POSITIVE_INFINITY, GeoMath.speedKmh(10, 0));
+    }
+
+    @Test
     void nineKmInFourSecondsIsAbout8100Kmh() {
         assertEquals(8100.0, GeoMath.speedKmh(9000, 4000), 0.001);
     }

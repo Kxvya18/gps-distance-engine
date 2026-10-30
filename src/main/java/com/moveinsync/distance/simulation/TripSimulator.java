@@ -26,9 +26,16 @@ public class TripSimulator {
     private static final long DAY_START_MILLIS = 1_790_000_000_000L;
 
     private final long seed;
+    private final boolean falseFixes;
 
     public TripSimulator(long seed) {
+        this(seed, true);
+    }
+
+    // falseFixes off gives GPS that only ever goes missing, for measuring that effect alone.
+    public TripSimulator(long seed, boolean falseFixes) {
         this.seed = seed;
+        this.falseFixes = falseFixes;
     }
 
     // One corridor: a staircase route out from the office, with its stops and tunnels.
@@ -100,7 +107,15 @@ public class TripSimulator {
         TripEvidence evidence = new TripEvidence("trip-" + index, "client-" + (index % 5),
                 logout ? TripEvidence.Direction.LOGOUT : TripEvidence.Direction.LOGIN,
                 pings, milestones, plannedStops, adHocRiders, OFFICE_LAT, OFFICE_LON);
-        return new SimulatedTrip(evidence, Math.round(corridor.totalKm() * 1000));
+        return new SimulatedTrip(evidence, Math.round(corridor.totalKm() * 1000), Math.round(gapKm(corridor) * 1000));
+    }
+
+    private double gapKm(Corridor corridor) {
+        double total = 0;
+        for (double[] tunnel : corridor.tunnels()) {
+            total += Math.min(tunnel[1], corridor.totalKm()) - tunnel[0];
+        }
+        return total;
     }
 
     private boolean reachedStop(double stopKm, double km, boolean logout) {
@@ -151,7 +166,7 @@ public class TripSimulator {
     }
 
     private void addPing(List<Ping> pings, Random random, double[] where, double driftNorth, double driftEast, long time) {
-        boolean weakFix = random.nextDouble() < 0.02;
+        boolean weakFix = falseFixes && random.nextDouble() < 0.02;
         double extra = weakFix ? 60 : 0;
         double accuracy = weakFix ? 80 : 5 + random.nextDouble() * 10;
         double lat = where[0] + (driftNorth + extra) / METERS_PER_DEGREE;
@@ -169,7 +184,7 @@ public class TripSimulator {
             int position = random.nextInt(pings.size() - 1);
             Collections.swap(pings, position, position + 1);
         }
-        if (count > 10 && random.nextDouble() < 0.05) {
+        if (falseFixes && count > 10 && random.nextDouble() < 0.05) {
             Ping near = pings.get(random.nextInt(count));
             for (int i = 1; i <= 3; i++) {
                 pings.add(new Ping(near.latitude() + 0.081, near.longitude(), near.timestampMillis() + i * 500L, 10));

@@ -81,6 +81,33 @@ class AnchorBuilderTest {
     }
 
     @Test
+    void locationsAtTheEdgeOfTheMapAreValid() {
+        double[][] edges = {{90.0, 77.6}, {-90.0, 77.6}, {12.9, 180.0}, {12.9, -180.0}};
+        for (double[] edge : edges) {
+            List<TrackPoint> points = builder.build(loginTrip(
+                    milestone(Milestone.Type.DROP, "e1", edge[0], edge[1], 1000L)), List.of());
+            assertEquals(edge[0], points.get(0).latitude());
+        }
+    }
+
+    @Test
+    void locationsJustOffTheMapAreInvalid() {
+        double[][] edges = {{90.01, 77.6}, {-90.01, 77.6}, {12.9, 180.01}, {12.9, -180.01}};
+        for (double[] edge : edges) {
+            List<TrackPoint> points = builder.build(loginTrip(
+                    milestone(Milestone.Type.DROP, "e1", edge[0], edge[1], 1000L)), List.of());
+            assertEquals(PLANNED.latitude(), points.get(0).latitude());
+        }
+    }
+
+    @Test
+    void zeroLatitudeAloneIsStillValid() {
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.DROP, "e1", 0.0, 77.6, 1000L)), List.of());
+        assertEquals(0.0, points.get(0).latitude());
+    }
+
+    @Test
     void riderWithNoValidPointAndNoFallbackAddsNothing() {
         assertTrue(builder.build(loginTrip(
                 milestone(Milestone.Type.DROP, "unknown", null, null, null)), List.of()).isEmpty());

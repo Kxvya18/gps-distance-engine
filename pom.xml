@@ -102,6 +102,56 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.13</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.pitest</groupId>
+				<artifactId>pitest-maven</artifactId>
+				<version>1.20.3</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.pitest</groupId>
+						<artifactId>pitest-junit5-plugin</artifactId>
+						<version>1.2.3</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<targetClasses>
+						<param>com.moveinsync.distance.core.*</param>
+						<param>com.moveinsync.distance.audit.*</param>
+						<param>com.moveinsync.distance.routing.*</param>
+						<param>com.moveinsync.distance.model.*</param>
+					</targetClasses>
+					<targetTests>
+						<param>com.moveinsync.distance.core.*</param>
+						<param>com.moveinsync.distance.audit.*</param>
+						<param>com.moveinsync.distance.routing.*</param>
+					</targetTests>
+					<threads>8</threads>
+					<outputFormats>
+						<param>CSV</param>
+						<param>XML</param>
+					</outputFormats>
+					<timestampedReports>false</timestampedReports>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
