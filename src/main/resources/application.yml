@@ -5,6 +5,8 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/distance}
     username: ${DB_USER:distance}
     password: ${DB_PASSWORD:distance}
+    hikari:
+      connection-timeout: 3000
   jpa:
     hibernate:
       ddl-auto: update

@@ -2,12 +2,14 @@ package com.moveinsync.distance.error;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.transaction.TransactionException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -33,6 +35,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)
     public ProblemDetail status(ResponseStatusException e) {
         return ProblemDetail.forStatusAndDetail(e.getStatusCode(), e.getReason());
+    }
+
+    @ExceptionHandler({DataAccessException.class, TransactionException.class})
+    public ProblemDetail databaseUnavailable(Exception e) {
+        log.error("database unavailable type={}", e.getClass().getName());
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Temporarily unavailable, safe to retry");
     }
 
     @ExceptionHandler(Exception.class)
