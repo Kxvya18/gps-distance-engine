@@ -37,10 +37,11 @@ Measured on an Apple M2 with 8 cores and 16 GB RAM, with other Docker workloads 
 
 | Measure | Result |
 |---|---|
-| Trips and pings | 10,000 trips, 15.05M pings |
-| Run time with cache | 10.4 s, including generating the trips (962 trips/s) |
-| Engine time per trip | p50 1.21 ms, p99 37.72 ms |
-| Peak heap seen | 187 MB |
+| Trips and pings | 10,000 trips, 15.05M pings (about 1,505 per trip) |
+| Run time with cache | 8.3 s, including generating the trips (1,202 trips/s) |
+| Engine time per trip | p50 0.57 ms, p99 30.13 ms |
+| Peak heap seen | 154 MB |
+| Trips where two runs disagree on the metres | 0 |
 | Audit failures | 0 |
 
 **Provider calls**
@@ -48,8 +49,10 @@ Measured on an Apple M2 with 8 cores and 16 GB RAM, with other Docker workloads 
 | Approach | Calls |
 |---|---|
 | One call per gap | 20,594 |
-| Batched per trip | 10,000 |
-| Batched and cached | 2,098 (90% fewer) |
+| Batched per trip, before caching | 10,000 (1.00 per trip) |
+| Batched and cached | 2,104 (0.21 per trip, 90% fewer) |
+
+Each trip's result also reports its own `providerCalls`.
 
 The cache result depends on the simulator repeating 300 fixed corridors, as shift routes do. A real hit rate must be measured on real traffic.
 
@@ -57,12 +60,12 @@ The cache result depends on the simulator repeating 300 fixed corridors, as shif
 
 | Method | Mean absolute error | Mean signed error |
 |---|---|---|
-| Naive sum of pings | 7.56% | +5.95% |
-| This engine | 1.26% (worst trip 2.90%) | -1.26% |
+| Naive sum of pings | 7.57% | +5.98% |
+| This engine | 1.26% (worst trip 2.73%) | -1.26% |
 
 The naive sum over-counts here because false fixes add more than the tunnels lose. The problem statement describes under-payment, and the real direction depends on the data. These figures apply to simulated trips only, on a street grid where road distance is known exactly, and real GPS may behave differently. The fake provider's 20 ms latency is an assumption.
 
-**Failure run:** the provider died halfway through 10,000 trips. All trips finished, 1,248 were marked `DEGRADED`, and every one was recomputed after recovery to exactly the same metres as the healthy run.
+**Failure run:** the provider died halfway through 10,000 trips. All trips finished, 1,266 were marked `DEGRADED`, and every one was recomputed after recovery to exactly the same metres as the healthy run.
 
 ## API
 
@@ -82,11 +85,17 @@ Demo users are `admin-a`, `operator-a`, `emp-1` and `admin-b`, with password `de
 
 ## How it works
 
+The request carries raw pings, trip milestones, planned stops, ad-hoc riders and the office location. See `scripts/sample-trip.json`.
+
 1. **Clean:** remove duplicates, sort, drop weak fixes and teleports.
 2. **Anchor:** add pickup, drop, no-show and office points.
 3. **Measure:** apply the ordered rules to each pair of points. See [docs/rules.md](docs/rules.md).
 4. **Audit:** a separate class that shares no engine code rechecks every segment before billing.
 5. **Store:** results and corrections commit together. A closed invoice never changes.
+
+**Rounding:** distance is held in whole metres as a `long`. Each segment is rounded once to the metre, the total is their exact sum, and the billable figure is rounded once, half up, to 0.1 km. Haversine uses `StrictMath`, so results match on every machine.
+
+**Rule version:** the rule order is fixed in code. Every limit and the no-show flag are set under `app.rules` in `application.yml`, and every result stores its rule version. Any change to a limit must raise `app.rules.version`.
 
 The architecture, sequence diagram and failure-mode table are in [docs/design-note.md](docs/design-note.md).
 
@@ -94,23 +103,37 @@ The architecture, sequence diagram and failure-mode table are in [docs/design-no
 
 | Guarantee | Test |
 |---|---|
-| Same input gives exactly the same result, in any order | `DistanceCalculatorTest` |
+| The two worked examples, with their exact numbers | `PdfExamplesTest` |
+| Same input gives exactly the same result, in any order, with or without the cache | `DistanceCalculatorTest` |
+| Fallback order for riders, no-shows and the office | `AnchorBuilderTest` |
+| Limits and the no-show flag are configurable | `RuleConfigurationTest` |
+| Rounding | `TripResultTest` |
 | Every billing rule, including boundaries | `SegmentRuleEngineTest` |
 | A bad burst leaves the distance unchanged | `DistanceCalculatorTest`, `PingCleanerTest` |
 | Provider failure, then exact recovery | `ProviderFailureTest` |
+| Automatic recompute with the real scheduler | `AutomaticRecoveryTest` |
 | Provider timeouts and partial batch failure | `ResilientRouterTest`, `DistanceCalculatorTest` |
 | Late pings make a signed correction and a replay changes nothing | `RecomputeServiceTest` |
 | Concurrent late pings lose nothing | `RecomputeServiceTest`, `ConcurrencyTest` |
 | Tenant isolation and roles | `TenantIsolationTest` |
+| No personal data in logs or errors | `LogPrivacyTest`, `TenantIsolationTest` |
 | The auditor catches tampered results | `TripAuditorTest` |
 
-There are 82 tests. Separately, the running stack was tested with `kill -9` while a trip was degraded, and the trip recovered after restart. That check was manual.
+There are 105 tests. Separately, the running stack was tested with `kill -9` while a trip was degraded, and the trip recovered after restart. That check was manual.
 
 ## Assumptions
 
 - Fixes worse than 50 m are low accuracy.
-- Logout trips anchor the office at the start.
+- A milestone with coordinates but no time counts as invalid and uses its fallback.
+- Logout trips anchor the office at the start. The spec's end-of-trip wording would add a return leg of about 30 km to its own 31 km logout example, so the rule is applied at the office end of the trip.
 - The other spec gaps are listed in [docs/rules.md](docs/rules.md).
+
+## Object-oriented design
+
+- **Layers:** `TripController`, then `TripService`, then `TripStore` and the repositories. The core algorithm is in plain classes with no Spring.
+- **Encapsulation:** records are immutable, and each class keeps its state private, such as `CircuitBreaker`'s state.
+- **Inheritance:** `FakeRoutingProvider` extends `BaseRoutingProvider`, which holds what all providers share. Errors extend `ApiException`.
+- **Polymorphism:** the engine depends on the `Router` and `RoutingProvider` interfaces, and each `ApiException` subclass supplies its own HTTP status.
 
 ## Cost and scaling
 

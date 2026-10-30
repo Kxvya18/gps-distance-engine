@@ -13,11 +13,11 @@ These rules run in this exact order. A change to any of them must raise `ruleVer
 
 | Anchor | Rule |
 |---|---|
-| Pickup or drop | The actual point if valid. Otherwise the fallback: profile home and sign-in time for an ad-hoc rider, or planned location and time for a planned rider |
-| No-show | Same fallback, and only when `includeNoShows` is on |
+| Pickup or drop | The actual point if valid. Otherwise an ad-hoc rider's profile home and sign-in time, or a planned rider's planned location and time |
+| No-show | Only when `includeNoShows` is on. The no-show location if valid, otherwise the planned location |
 | Office | The actual point if within 400 m of the planned office. Otherwise the planned office, with the milestone's time |
 
-A location is invalid if it is missing, out of range, or exactly 0,0. A milestone with no valid point and no valid fallback adds nothing.
+A point is invalid if its location or time is missing, or its location is out of range or exactly 0,0. A milestone with no valid point and no fallback adds nothing.
 
 ## 3. Measure each pair of neighbouring points
 
@@ -50,5 +50,5 @@ Each segment is rounded to whole metres, and the total is the exact sum of those
 | Bad first ping | Longest chain of plausible pings | Comparing to the last good ping makes one bad first ping delete the whole trip |
 | Rejected route, over 100 km | Straight line × 1.4, flagged for review | The same estimate used when the provider is down |
 | Rejected route, too fast | Plain straight line, flagged for review | Even the estimate is impossible, so pay the lowest defensible figure until a human looks |
-| Logout trips | The office anchor goes at the trip start | The spec's end-of-trip rule would add a false leg back to the office after the last drop |
+| Logout trips | The office anchor goes at the trip start | Read literally, the end-of-trip rule adds a false leg back to the office after the last drop, which contradicts the spec's own 30.6 km logout example |
 | Same timestamp, few metres apart | A jump within 50 m counts as a plausible speed | Otherwise a ping and an anchor at one instant give an infinite speed and a needless rejection. Found by the simulator |

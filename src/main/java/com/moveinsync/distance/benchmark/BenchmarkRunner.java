@@ -58,6 +58,9 @@ public class BenchmarkRunner {
         long callsCached = withCache.outcomes().stream().mapToLong(TripOutcome::providerCalls).sum();
         long callsBatched = noCache.outcomes().stream().mapToLong(TripOutcome::providerCalls).sum();
         System.out.printf("Provider calls: %d gaps one call each -> %d batched -> %d batched and cached%n", gaps, callsBatched, callsCached);
+        System.out.printf("Provider calls per trip: %.2f before caching -> %.2f after caching%n",
+                (double) callsBatched / trips, (double) callsCached / trips);
+        System.out.println("Trips where the two runs disagree on the metres: " + disagreements(withCache, noCache));
 
         printAccuracy(withCache.outcomes());
         failureRun(trips, latency, withCache.outcomes());
@@ -107,6 +110,16 @@ public class BenchmarkRunner {
         }
         pool.shutdown();
         return new RunResult(outcomes, (System.nanoTime() - start) / 1e9, peakHeap.get());
+    }
+
+    private static int disagreements(RunResult a, RunResult b) {
+        int count = 0;
+        for (int i = 0; i < a.outcomes().size(); i++) {
+            if (a.outcomes().get(i).resultMeters() != b.outcomes().get(i).resultMeters()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private static int routedGaps(TripResult result) {

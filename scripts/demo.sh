@@ -26,9 +26,9 @@ new_trip() {
       .tripId = $id
       | .pings[].latitude += $d
       | .officeLatitude += $d
-      | .milestones[] |= (
-          (if .latitude == null then . else .latitude += $d end)
-          | (if .fallbackLatitude == null then . else .fallbackLatitude += $d end))' \
+      | .plannedStops[].latitude += $d
+      | .adHocRiders[].homeLatitude += $d
+      | .milestones[] |= (if .latitude == null then . else .latitude += $d end)' \
     "$HERE/sample-trip.json"
 }
 post_trip() {
