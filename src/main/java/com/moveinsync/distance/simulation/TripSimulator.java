@@ -57,7 +57,7 @@ public class TripSimulator {
         double driftNorth = 0;
         double driftEast = 0;
         int nextStop = 0;
-        double speedKmh = 18 + random.nextDouble() * 17;
+        double speedKmh = 15 + random.nextDouble() * 15;
 
         while (travelledKm < corridor.totalKm()) {
             double km = logout ? travelledKm : corridor.totalKm() - travelledKm;
@@ -79,7 +79,7 @@ public class TripSimulator {
             }
 
             if (random.nextDouble() < 0.02) {
-                speedKmh = 18 + random.nextDouble() * 17;
+                speedKmh = 15 + random.nextDouble() * 15;
             }
             travelledKm += speedKmh * PING_SECONDS / 3600.0;
             time += PING_SECONDS * 1000L;

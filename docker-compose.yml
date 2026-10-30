@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: distance
+      POSTGRES_USER: distance
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-distance}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U distance"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/distance
+      DB_USER: distance
+      DB_PASSWORD: ${DB_PASSWORD:-distance}
+      # Local demo defaults only. Set real values through the environment anywhere else.
+      JWT_SECRET: ${JWT_SECRET:-local-demo-secret-change-me-outside-of-docker-compose}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-demo-password}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    restart: on-failure
+
+volumes:
+  db-data:
