@@ -38,44 +38,25 @@ Rebuild a billable distance for each cab trip from unreliable GPS, so that both 
 
 ## 2. Architecture
 
-### System context
+### The system
 
-Who talks to the system, and what it depends on.
-
-```mermaid
-flowchart TB
-    Admin["Admin or operator<br/>submits trips, closes invoices"]
-    Employee["Employee<br/>reads own trip"]
-    OnCall["On-call engineer<br/>reads metrics"]
-    System["GPS Distance Engine"]
-    Provider["Routing provider<br/>slow, rate-limited, paid per call"]
-    DB[("PostgreSQL")]
-
-    Admin --> System
-    Employee --> System
-    OnCall --> System
-    System --> Provider
-    System --> DB
-```
-
-### Containers
-
-What actually runs. `docker compose up --build` starts both containers.
+Who uses it, what runs, and what it depends on. `docker compose up --build` starts both containers.
 
 ```mermaid
 flowchart LR
-    Client["Client<br/>curl, Postman, another service"]
+    Users["Admins, operators,<br/>employees, on-call"]
     subgraph Docker
-        App["app container<br/>Java 17, Spring Boot 4<br/>port 8080"]
-        DB[("db container<br/>PostgreSQL 16<br/>port 5432")]
-        Volume[("db-data volume")]
+        App["App<br/>Java 17, Spring Boot 4"]
+        DB[("PostgreSQL 16")]
     end
-    Client -- "HTTPS or HTTP with JWT" --> App
-    App -- "JDBC" --> DB
-    DB --- Volume
+    Provider["Routing provider<br/>fake in this repo"]
+
+    Users -- "HTTP with JWT" --> App
+    App --> DB
+    App --> Provider
 ```
 
-The fake routing provider runs inside the app container. A real one would be an external HTTPS call behind the same interface.
+The fake provider runs inside the app. A real one would be an external call behind the same interface.
 
 ### Layers
 
@@ -83,51 +64,18 @@ Requests move downward, and each layer only talks to the one below it.
 
 ```mermaid
 flowchart TB
-    subgraph Web["Web layer"]
-        Filter["Spring Security<br/>checks the JWT"]
-        Controllers["TripController, AuthController"]
-        Handler["GlobalExceptionHandler"]
-    end
-    subgraph Service["Service layer"]
-        TripService
-        RecomputeService
-        TripStore
-    end
-    subgraph Engine["Plain Java engine, no Spring"]
-        Calculator["DistanceCalculator"]
-        Cleaner["PingCleaner"]
-        Anchors["AnchorBuilder"]
-        Rules["SegmentRuleEngine"]
-        Hasher["EvidenceHasher"]
-    end
-    subgraph Routing["Routing, no Spring"]
-        Router["ResilientRouter"]
-        Cache["RouteCache"]
-        Breaker["CircuitBreaker"]
-        Provider["BaseRoutingProvider<br/>FakeRoutingProvider"]
-    end
+    Web["Web<br/>controllers, security, error handling"]
+    Service["Service<br/>TripService, RecomputeService, TripStore"]
+    Engine["Engine, plain Java<br/>cleaning, anchors, rules, calculator"]
     Auditor["TripAuditor<br/>no shared code with the engine"]
-    subgraph Data["Data layer"]
-        Repos["Repositories"]
-        DB[("PostgreSQL")]
-    end
+    Routing["Routing, plain Java<br/>router, cache, breaker, provider"]
+    Data["Data<br/>repositories, PostgreSQL"]
 
-    Filter --> Controllers
-    Controllers --> TripService
-    RecomputeService --> TripService
-    TripService --> Calculator
-    TripService --> Auditor
-    TripService --> Hasher
-    TripService --> TripStore
-    TripStore --> Repos
-    Repos --> DB
-    Calculator --> Cleaner
-    Calculator --> Anchors
-    Calculator --> Rules
-    Calculator --> Router
-    Router --> Cache
-    Router --> Breaker
-    Router --> Provider
+    Web --> Service
+    Service --> Engine
+    Service --> Auditor
+    Service --> Data
+    Engine --> Routing
 ```
 
 ### Package rules

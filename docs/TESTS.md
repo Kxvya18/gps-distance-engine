@@ -102,222 +102,222 @@ The test suite also caught several wrong expected values in tests themselves, wh
 
 **`PdfExamplesTest`** · The exact numbers from the case study · 2 tests
 
-- ✅ Burst of pings 9 km away for 4 seconds is dropped and distance is unchanged
-- ✅ Thirty one km logout trip with a 22 minute gap reports 30 point 6 km
+- Burst of pings 9 km away for 4 seconds is dropped and distance is unchanged
+- Thirty one km logout trip with a 22 minute gap reports 30 point 6 km
 
 ### Clean the evidence (13 tests)
 
 **`PingCleanerTest`** · Duplicates, order, accuracy, teleports · 8 tests
 
-- ✅ Teleport limit comes from configuration
-- ✅ Bad first ping does not lose the trip
-- ✅ Empty input gives empty output
-- ✅ Drops burst of bad pings from the middle
-- ✅ Accuracy at the limit is kept and just worse is dropped
-- ✅ Removes duplicates
-- ✅ Sorts by time
-- ✅ Drops low accuracy ping
+- Teleport limit comes from configuration
+- Bad first ping does not lose the trip
+- Empty input gives empty output
+- Drops burst of bad pings from the middle
+- Accuracy at the limit is kept and just worse is dropped
+- Removes duplicates
+- Sorts by time
+- Drops low accuracy ping
 
 **`GeoMathTest`** · Distance and speed maths · 5 tests
 
-- ✅ No time and no movement is zero speed
-- ✅ Nine km in four seconds is about 8100 kmh
-- ✅ Same point is zero
-- ✅ Movement in no time is infinite speed
-- ✅ One degree of latitude is about 111 km
+- No time and no movement is zero speed
+- Nine km in four seconds is about 8100 kmh
+- Same point is zero
+- Movement in no time is infinite speed
+- One degree of latitude is about 111 km
 
 ### Patch the gaps (18 tests)
 
 **`AnchorBuilderTest`** · Fallback order, no-show flag, the 400 m rule · 18 tests
 
-- ✅ Logout trip anchors the office at the start not the end
-- ✅ Points come back in time order
-- ✅ Invalid trip end uses office with trip end time
-- ✅ Locations just off the map are invalid
-- ✅ No show location is added when flag is on
-- ✅ No show is skipped when flag is off
-- ✅ Locations at the edge of the map are valid
-- ✅ Rider with no valid point and no fallback adds nothing
-- ✅ Zero latitude alone is still valid
-- ✅ Missing time makes the actual point invalid
-- ✅ Uses actual drop when valid
-- ✅ Trip end beyond 400 meters uses office with trip end time
-- ✅ Zero zero location is invalid
-- ✅ Invalid no show location falls back to planned location
-- ✅ Ad hoc rider falls back to profile home and sign in time
-- ✅ Out of range location is invalid
-- ✅ Trip end within 400 meters uses actual point
-- ✅ Planned rider falls back to planned location and time
+- Logout trip anchors the office at the start not the end
+- Points come back in time order
+- Invalid trip end uses office with trip end time
+- Locations just off the map are invalid
+- No show location is added when flag is on
+- No show is skipped when flag is off
+- Locations at the edge of the map are valid
+- Rider with no valid point and no fallback adds nothing
+- Zero latitude alone is still valid
+- Missing time makes the actual point invalid
+- Uses actual drop when valid
+- Trip end beyond 400 meters uses office with trip end time
+- Zero zero location is invalid
+- Invalid no show location falls back to planned location
+- Ad hoc rider falls back to profile home and sign in time
+- Out of range location is invalid
+- Trip end within 400 meters uses actual point
+- Planned rider falls back to planned location and time
 
 ### Measure and bill (29 tests)
 
 **`SegmentRuleEngineTest`** · Each rule and its boundaries · 14 tests
 
-- ✅ Long gap under five kmh is parked
-- ✅ Too fast route with plausible estimate is kept
-- ✅ Same timestamp within gps error is ashort gap not aroute
-- ✅ Too fast route with too fast estimate is rejected and uses aerial
-- ✅ Short gap is plausible up to 120 kmh
-- ✅ Short gap at plausible speed is aerial
-- ✅ Short gap at impossible speed needs aroute
-- ✅ Exactly 70 seconds is not ashort gap
-- ✅ Parked needs aspeed under 5 kmh
-- ✅ No answer uses straight line times 1 point 4
-- ✅ Route of exactly 100 km is accepted
-- ✅ Good route is used
-- ✅ Route over 100 km is rejected and estimated
-- ✅ Long moving gap needs aroute
+- Long gap under five kmh is parked
+- Too fast route with plausible estimate is kept
+- Same timestamp within gps error is ashort gap not aroute
+- Too fast route with too fast estimate is rejected and uses aerial
+- Short gap is plausible up to 120 kmh
+- Short gap at plausible speed is aerial
+- Short gap at impossible speed needs aroute
+- Exactly 70 seconds is not ashort gap
+- Parked needs aspeed under 5 kmh
+- No answer uses straight line times 1 point 4
+- Route of exactly 100 km is accepted
+- Good route is used
+- Route over 100 km is rejected and estimated
+- Long moving gap needs aroute
 
 **`DistanceCalculatorTest`** · Whole trips and determinism · 9 tests
 
-- ✅ Full gps trip is all short gaps
-- ✅ Shuffled and duplicated input gives the same segments
-- ✅ Two separate runs agree to the metre whether or not answers were cached
-- ✅ Burst of bad pings leaves the distance unchanged
-- ✅ Partial router answer keeps the real routes and marks the trip degraded
-- ✅ Total is the exact sum of the segments
-- ✅ Trip with no usable points goes to review
-- ✅ Anchors split the tunnel gap and only real gaps are routed
-- ✅ No router answer marks the trip degraded
+- Full gps trip is all short gaps
+- Shuffled and duplicated input gives the same segments
+- Two separate runs agree to the metre whether or not answers were cached
+- Burst of bad pings leaves the distance unchanged
+- Partial router answer keeps the real routes and marks the trip degraded
+- Total is the exact sum of the segments
+- Trip with no usable points goes to review
+- Anchors split the tunnel gap and only real gaps are routed
+- No router answer marks the trip degraded
 
 **`TripResultTest`** · The single rounding step · 1 tests
 
-- ✅ Rounds half up to one decimal
+- Rounds half up to one decimal
 
 **`EvidenceHasherTest`** · Recognising the same input · 5 tests
 
-- ✅ Hash is afull sha 256 value
-- ✅ Planned stops and riders change the hash
-- ✅ Rule version changes the hash
-- ✅ An extra ping changes the hash
-- ✅ Order and duplicates do not change the hash
+- Hash is afull sha 256 value
+- Planned stops and riders change the hash
+- Rule version changes the hash
+- An extra ping changes the hash
+- Order and duplicates do not change the hash
 
 ### Survive the provider (23 tests)
 
 **`ResilientRouterTest`** · Cache, batching, timeouts, retries, rate limits · 13 tests
 
-- ✅ Failed call is retried once then gives no answer
-- ✅ When one batch fails the other batches still answer
-- ✅ Points in the same cell share an answer
-- ✅ A failed call succeeds on its retry
-- ✅ Large request list is split into batches
-- ✅ Rate limited calls are treated as failures not crashes
-- ✅ Open breaker means no provider calls
-- ✅ Second ask comes from the cache
-- ✅ Timeout frees the call slot
-- ✅ Duplicate requests in one list are asked once
-- ✅ Hanging provider times out and gives no answer
-- ✅ Repeated timeouts open the breaker
-- ✅ A successful call is not repeated
+- Failed call is retried once then gives no answer
+- When one batch fails the other batches still answer
+- Points in the same cell share an answer
+- A failed call succeeds on its retry
+- Large request list is split into batches
+- Rate limited calls are treated as failures not crashes
+- Open breaker means no provider calls
+- Second ask comes from the cache
+- Timeout frees the call slot
+- Duplicate requests in one list are asked once
+- Hanging provider times out and gives no answer
+- Repeated timeouts open the breaker
+- A successful call is not repeated
 
 **`RouteCacheTest`** · Eviction and expiry · 3 tests
 
-- ✅ Returns what was saved
-- ✅ Evicts the least recently used entry
-- ✅ Expires after the ttl
+- Returns what was saved
+- Evicts the least recently used entry
+- Expires after the ttl
 
 **`CircuitBreakerTest`** · Open, test, close · 5 tests
 
-- ✅ A success resets the failure count
-- ✅ Successful test call closes the breaker
-- ✅ Allows only one test call after the cool down
-- ✅ Opens after the threshold
-- ✅ Failed test call reopens the breaker
+- A success resets the failure count
+- Successful test call closes the breaker
+- Allows only one test call after the cool down
+- Opens after the threshold
+- Failed test call reopens the breaker
 
 **`ProviderFailureTest`** · Failure injection: the provider dies halfway · 1 tests
 
-- ✅ Trips are degraded during the outage and recover to the exact healthy km
+- Trips are degraded during the outage and recover to the exact healthy km
 
 **`AutomaticRecoveryTest`** · Failure injection: recovery with the real scheduler · 1 tests
 
-- ✅ Degraded trip is recomputed without any request
+- Degraded trip is recomputed without any request
 
 ### Keep invoices right (31 tests)
 
 **`RecomputeServiceTest`** · Late pings, corrections, replays, races · 11 tests
 
-- ✅ Closing twice gives the same invoice
-- ✅ Concurrent late pings are all kept and corrections add up
-- ✅ Many closes at once all get the same invoice
-- ✅ Degraded trip cannot be billed and recovers automatically
-- ✅ Replaying the same trip returns the same result without provider calls
-- ✅ Late pings after billing make asigned correction and leave the invoice alone
-- ✅ Signed delta is shown with its sign
-- ✅ Replaying the same late pings changes nothing
-- ✅ Rejected routes are counted
-- ✅ Flagged trip holds its correction until aperson reviews it
-- ✅ Closing while late pings arrive never loses the correction
+- Closing twice gives the same invoice
+- Concurrent late pings are all kept and corrections add up
+- Many closes at once all get the same invoice
+- Degraded trip cannot be billed and recovers automatically
+- Replaying the same trip returns the same result without provider calls
+- Late pings after billing make asigned correction and leave the invoice alone
+- Signed delta is shown with its sign
+- Replaying the same late pings changes nothing
+- Rejected routes are counted
+- Flagged trip holds its correction until aperson reviews it
+- Closing while late pings arrive never loses the correction
 
 **`TripAuditorTest`** · The second opinion catches tampering · 20 tests
 
-- ✅ Catches awrong estimate
-- ✅ Catches aroute that should have been parked
-- ✅ Correct segments of every rule pass
-- ✅ Catches awrong rule label
-- ✅ Catches achanged short gap distance
-- ✅ Catches aroute over the limit
-- ✅ Catches awrong speed rejection distance
-- ✅ Catches aspeed rejection when the estimate was fine
-- ✅ Catches time running backwards
-- ✅ Same place at the same instant is avalid short gap
-- ✅ Catches atotal that is not the sum
-- ✅ Catches awrong rejected distance
-- ✅ Catches awrong short gap label
-- ✅ Real engine results pass the audit
-- ✅ Catches arejected route on an ok trip
-- ✅ Catches segments that do not connect
-- ✅ Catches an estimate on atrip not marked degraded
-- ✅ Catches awrong parked distance
-- ✅ Catches aroute shorter than the straight line
-- ✅ Catches aparked segment that was moving
+- Catches awrong estimate
+- Catches aroute that should have been parked
+- Correct segments of every rule pass
+- Catches awrong rule label
+- Catches achanged short gap distance
+- Catches aroute over the limit
+- Catches awrong speed rejection distance
+- Catches aspeed rejection when the estimate was fine
+- Catches time running backwards
+- Same place at the same instant is avalid short gap
+- Catches atotal that is not the sum
+- Catches awrong rejected distance
+- Catches awrong short gap label
+- Real engine results pass the audit
+- Catches arejected route on an ok trip
+- Catches segments that do not connect
+- Catches an estimate on atrip not marked degraded
+- Catches awrong parked distance
+- Catches aroute shorter than the straight line
+- Catches aparked segment that was moving
 
 ### Keep clients and people safe (15 tests)
 
 **`TenantIsolationTest`** · Isolation, roles, safe errors · 13 tests
 
-- ✅ Operator cannot switch the provider
-- ✅ Employee cannot see someone elses trip
-- ✅ Another client cannot read the trip
-- ✅ No token and bad password are rejected
-- ✅ Errors do not echo request data
-- ✅ Employee cannot submit trips
-- ✅ Two clients can use the same trip id safely
-- ✅ Employee sees their own trip without coordinates
-- ✅ Impossible ping gives ameaningful message
-- ✅ Invalid fields are named without their values
-- ✅ Too many late pings are rejected
-- ✅ Another client cannot change or close the trip
-- ✅ Metrics need arole
+- Operator cannot switch the provider
+- Employee cannot see someone elses trip
+- Another client cannot read the trip
+- No token and bad password are rejected
+- Errors do not echo request data
+- Employee cannot submit trips
+- Two clients can use the same trip id safely
+- Employee sees their own trip without coordinates
+- Impossible ping gives ameaningful message
+- Invalid fields are named without their values
+- Too many late pings are rejected
+- Another client cannot change or close the trip
+- Metrics need arole
 
 **`LogPrivacyTest`** · No personal data in logs · 1 tests
 
-- ✅ Home location and rider id stay out of the logs(captured output)
+- Home location and rider id stay out of the logs(captured output)
 
 **`DatabaseDownTest`** · Failure injection: database unreachable · 1 tests
 
-- ✅ Caller gets aretryable error with no internal details
+- Caller gets aretryable error with no internal details
 
 ### Hold under pressure (3 tests)
 
 **`ConcurrencyTest`** · Many threads at once · 2 tests
 
-- ✅ Breaker opens once under concurrent failures
-- ✅ Many threads get the same answers and keep the cache bounded
+- Breaker opens once under concurrent failures
+- Many threads get the same answers and keep the cache bounded
 
 **`BenchmarkTest`** · A small benchmark on every build · 1 tests
 
-- ✅ Small run finishes with no audit failures and agreeing results(captured output)
+- Small run finishes with no audit failures and agreeing results(captured output)
 
 ### Start up correctly (3 tests)
 
 **`RuleConfigurationTest`** · Limits come from configuration · 2 tests
 
-- ✅ Other limits keep the spec defaults
-- ✅ Configuration overrides the defaults
+- Other limits keep the spec defaults
+- Configuration overrides the defaults
 
 **`GpsDistanceEngineApplicationTests`** · The whole app starts · 1 tests
 
-- ✅ Context loads
+- Context loads
 
 ## What isn't automated
 
