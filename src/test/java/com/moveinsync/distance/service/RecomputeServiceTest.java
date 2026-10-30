@@ -2,6 +2,8 @@ package com.moveinsync.distance.service;
 
 import com.moveinsync.distance.core.DistanceCalculator;
 import com.moveinsync.distance.dto.InvoiceResponse;
+import com.moveinsync.distance.entity.Invoice;
+import com.moveinsync.distance.entity.InvoiceCorrection;
 import com.moveinsync.distance.error.ConflictException;
 import com.moveinsync.distance.model.Milestone;
 import com.moveinsync.distance.model.Ping;
@@ -79,6 +81,16 @@ class RecomputeServiceTest {
         assertEquals(1, after.corrections().size());
         assertEquals(expectedDelta, after.corrections().get(0).deltaMeters());
         assertEquals(updated.totalMeters(), after.currentMeters());
+    }
+
+    @Test
+    void signedDeltaIsShownWithItsSign() {
+        Invoice invoice = new Invoice(TENANT, "t", 30_000, 1);
+        InvoiceResponse response = InvoiceResponse.from(invoice, List.of(
+                new InvoiceCorrection(TENANT, "t", 1800, "a"), new InvoiceCorrection(TENANT, "t", -300, "b")));
+        assertEquals("+1.8 km", response.corrections().get(0).deltaKm());
+        assertEquals("-0.3 km", response.corrections().get(1).deltaKm());
+        assertEquals(31_500, response.currentMeters());
     }
 
     @Test

@@ -7,8 +7,13 @@ import com.moveinsync.distance.model.Segment;
 import com.moveinsync.distance.model.SegmentRule;
 import com.moveinsync.distance.model.TripEvidence;
 import com.moveinsync.distance.model.TripResult;
+import com.moveinsync.distance.routing.CircuitBreaker;
+import com.moveinsync.distance.routing.FakeRoutingProvider;
+import com.moveinsync.distance.routing.ResilientRouter;
 import com.moveinsync.distance.routing.RouteBatch;
+import com.moveinsync.distance.routing.RouteCache;
 import com.moveinsync.distance.routing.Router;
+import com.moveinsync.distance.simulation.TripSimulator;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -103,6 +108,29 @@ class DistanceCalculatorTest {
         TripResult second = calculator.calculate(trip(shuffled, drop(16)));
 
         assertEquals(first, second);
+    }
+
+    @Test
+    void twoSeparateRunsAgreeToTheMetreWhetherOrNotAnswersWereCached() {
+        TripSimulator simulator = new TripSimulator(3);
+        DistanceCalculator shared = freshEngine();
+        for (int i = 0; i < 100; i++) {
+            TripEvidence evidence = simulator.generate(i).evidence();
+            shared.calculate(evidence);
+            TripResult fromCache = shared.calculate(evidence);
+            TripResult fromProvider = freshEngine().calculate(evidence);
+
+            assertEquals(0, fromCache.providerCalls());
+            assertEquals(fromProvider.totalMeters(), fromCache.totalMeters());
+            assertEquals(fromProvider.segments(), fromCache.segments());
+            assertEquals(RuleConfig.defaults().ruleVersion(), fromCache.ruleVersion());
+        }
+    }
+
+    private DistanceCalculator freshEngine() {
+        return new DistanceCalculator(RuleConfig.defaults(), new ResilientRouter(new FakeRoutingProvider(0, 100),
+                new RouteCache(10_000, 60_000, System::currentTimeMillis),
+                new CircuitBreaker(5, 1000, System::currentTimeMillis), 25, 8));
     }
 
     @Test

@@ -122,6 +122,22 @@ class ResilientRouterTest {
     }
 
     @Test
+    void rateLimitedCallsAreTreatedAsFailuresNotCrashes() throws Exception {
+        FakeRoutingProvider limited = new FakeRoutingProvider(300, 1);
+        ResilientRouter busy = new ResilientRouter(limited, cache, breaker, 10, 2);
+        RouteRequest other = new RouteRequest(12.9, 77.6, 14.0, 77.7);
+
+        Thread first = new Thread(() -> busy.routeAll(List.of(request)));
+        first.start();
+        Thread.sleep(50);
+        RouteBatch refused = busy.routeAll(List.of(other));
+        first.join();
+
+        assertNull(refused.meters().get(0));
+        assertTrue(busy.failureCount() >= 1);
+    }
+
+    @Test
     void openBreakerMeansNoProviderCalls() {
         provider.setDown(true);
         for (int i = 0; i < 3; i++) {

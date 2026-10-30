@@ -63,6 +63,24 @@ class SegmentRuleEngineTest {
     }
 
     @Test
+    void routeOfExactly100KmIsAccepted() {
+        Segment segment = rules.routedSegment(point(0, 0), point(50, 3600), 100_000L);
+        assertEquals(SegmentRule.ROUTED, segment.rule());
+    }
+
+    @Test
+    void parkedNeedsASpeedUnder5Kmh() {
+        assertTrue(rules.needsRoute(point(0, 0), point(0.51, 360)), "5.1 km/h is not parked");
+        assertFalse(rules.needsRoute(point(0, 0), point(0.49, 360)), "4.9 km/h is parked");
+    }
+
+    @Test
+    void shortGapIsPlausibleUpTo120Kmh() {
+        assertFalse(rules.needsRoute(point(0, 0), point(1.0, 31)), "116 km/h is plausible");
+        assertTrue(rules.needsRoute(point(0, 0), point(1.0, 29)), "124 km/h is not");
+    }
+
+    @Test
     void goodRouteIsUsed() {
         Segment segment = rules.routedSegment(point(0, 0), point(5, 600), 6500L);
         assertEquals(SegmentRule.ROUTED, segment.rule());

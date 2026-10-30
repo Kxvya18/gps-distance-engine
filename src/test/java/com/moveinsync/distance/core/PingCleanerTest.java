@@ -68,6 +68,23 @@ class PingCleanerTest {
     }
 
     @Test
+    void accuracyAtTheLimitIsKeptAndJustWorseIsDropped() {
+        List<Ping> pings = new ArrayList<>(List.of(new Ping(12.9, 77.6, 0, 50.0), new Ping(12.9, 77.6, 5000, 50.1)));
+        assertEquals(1, cleaner.clean(pings).size());
+    }
+
+    @Test
+    void teleportLimitComesFromConfiguration() {
+        RuleConfig d = RuleConfig.defaults();
+        RuleConfig strict = new RuleConfig(d.ruleVersion(), 10.0, d.maxAccuracyMeters(), d.shortGapSeconds(),
+                d.parkedSpeedKmh(), d.maxRouteMeters(), d.roadFactor(), d.officeRadiusMeters(), d.includeNoShows());
+        // 22 metres in 5 seconds is 16 km/h: fine at the default limit, a teleport at 10 km/h.
+        List<Ping> pings = List.of(new Ping(12.9, 77.6, 0, 10), new Ping(12.9002, 77.6, 5000, 10));
+        assertEquals(2, cleaner.clean(pings).size());
+        assertEquals(1, new PingCleaner(strict).clean(pings).size());
+    }
+
+    @Test
     void emptyInputGivesEmptyOutput() {
         assertTrue(cleaner.clean(List.of()).isEmpty());
     }
