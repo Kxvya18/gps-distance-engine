@@ -1,5 +1,7 @@
 # Design note
 
+The one-to-two page summary. Every decision is argued in full in the [design dossier](DESIGN.md).
+
 ## The problem
 
 Vendors are paid per km, and GPS loses data. The engine rebuilds each trip's distance from pings and known stops, using routing calls only for real gaps, and explains every km.
@@ -145,7 +147,7 @@ Latency is traded against accuracy in one place. A slow provider is given 2 seco
 ## Trade-offs
 
 - **Snapped cells cost accuracy for determinism.** The provider is asked about cell centres (0.0005°, about 55 m), so a cached answer equals a fresh one. Each endpoint can move by up to about 40 m.
-- **Evidence is stored as JSON in the trip row.** It is simple and makes recompute easy, at about 160 KB per trip.
+- **Evidence is stored as JSON in the trip row.** It is simple and makes recompute easy, at about 105 KB per trip.
 - **The cache and breaker live in one JVM.** Threads share them cheaply, and losing them on restart costs only some extra provider calls.
 - **The auditor is separate code, not a separate team.** It has its own formula and shares no engine code, but a misreading of the written rules would pass both. The simulator's true distances are a second check.
 
