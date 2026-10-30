@@ -117,6 +117,22 @@ class DistanceCalculatorTest {
     }
 
     @Test
+    void partialRouterAnswerKeepsTheRealRoutesAndMarksTheTripDegraded() {
+        Router answersFirstGapOnly = requests -> {
+            List<Long> answers = new ArrayList<>(Collections.nCopies(requests.size(), null));
+            answers.set(0, 7000L);
+            return new RouteBatch(answers, 1);
+        };
+        List<Ping> pings = new ArrayList<>(drive(0, 10));
+        pings.addAll(drive(22, 31));
+        TripResult result = new DistanceCalculator(RuleConfig.defaults(), answersFirstGapOnly).calculate(trip(pings, drop(16)));
+
+        assertEquals(TripResult.Status.DEGRADED, result.status());
+        assertEquals(1, countRule(result, SegmentRule.ROUTED));
+        assertEquals(1, countRule(result, SegmentRule.PROVIDER_DOWN_ESTIMATE));
+    }
+
+    @Test
     void tripWithNoUsablePointsGoesToReview() {
         TripResult result = calculator.calculate(trip(List.of()));
         assertEquals(0, result.totalMeters());

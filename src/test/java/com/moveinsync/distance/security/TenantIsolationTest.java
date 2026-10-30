@@ -132,6 +132,19 @@ class TenantIsolationTest {
     }
 
     @Test
+    void tooManyLatePingsAreRejected() throws Exception {
+        String admin = login("admin-a");
+        String tripId = submit(admin, "emp-1");
+        List<Ping> tooMany = new ArrayList<>();
+        for (int i = 0; i < 20_001; i++) {
+            tooMany.add(new Ping(12.9, 77.6, i, 10));
+        }
+        mvc.perform(post("/api/trips/" + tripId + "/late-pings").header("Authorization", admin)
+                        .contentType(MediaType.APPLICATION_JSON).content(mapper.writeValueAsString(tooMany)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void errorsDoNotEchoRequestData() throws Exception {
         String secret = "9876543210-home-address";
         String bad = "{\"tripId\":\"\",\"direction\":\"" + secret + "\"}";

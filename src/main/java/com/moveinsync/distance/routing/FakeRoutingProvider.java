@@ -16,6 +16,7 @@ public class FakeRoutingProvider implements RoutingProvider {
     private final Semaphore rateLimit;
     private final AtomicBoolean down = new AtomicBoolean(false);
     private final AtomicLong calls = new AtomicLong();
+    private volatile long extraDelayMillis = 0;
 
     public FakeRoutingProvider(long latencyMillis, int maxConcurrentCalls) {
         this.latencyMillis = latencyMillis;
@@ -44,11 +45,12 @@ public class FakeRoutingProvider implements RoutingProvider {
     }
 
     private void pause() {
-        if (latencyMillis == 0) {
+        long delay = latencyMillis + extraDelayMillis;
+        if (delay == 0) {
             return;
         }
         try {
-            Thread.sleep(latencyMillis);
+            Thread.sleep(delay);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RoutingException("interrupted");
@@ -59,6 +61,11 @@ public class FakeRoutingProvider implements RoutingProvider {
         double northSouth = GeoMath.metersBetween(r.fromLatitude(), r.fromLongitude(), r.toLatitude(), r.fromLongitude());
         double eastWest = GeoMath.metersBetween(r.toLatitude(), r.fromLongitude(), r.toLatitude(), r.toLongitude());
         return Math.round(northSouth + eastWest);
+    }
+
+    // Makes the provider slow enough to hang, for timeout tests.
+    public void setExtraDelayMillis(long millis) {
+        extraDelayMillis = millis;
     }
 
     public void setDown(boolean isDown) {

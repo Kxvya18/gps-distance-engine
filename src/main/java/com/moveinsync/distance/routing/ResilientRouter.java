@@ -4,7 +4,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 // Puts the cache, batching, retry and circuit breaker in front of the provider.
@@ -15,22 +21,37 @@ public class ResilientRouter implements Router {
     private static final double CELL_DEGREES = 0.0005;
     private static final int MAX_ATTEMPTS = 2;
     private static final long RETRY_PAUSE_MILLIS = 20;
+    private static final long DEFAULT_TIMEOUT_MILLIS = 2000;
 
     private final RoutingProvider provider;
     private final RouteCache cache;
     private final CircuitBreaker breaker;
     private final int batchSize;
     private final Semaphore concurrentCalls;
+    private final ExecutorService callers;
+    private final long timeoutMillis;
+    private final AtomicLong timeouts = new AtomicLong();
     private final AtomicLong failures = new AtomicLong();
     private final AtomicLong retries = new AtomicLong();
 
     public ResilientRouter(RoutingProvider provider, RouteCache cache, CircuitBreaker breaker,
                            int batchSize, int maxConcurrentCalls) {
+        this(provider, cache, breaker, batchSize, maxConcurrentCalls, DEFAULT_TIMEOUT_MILLIS);
+    }
+
+    public ResilientRouter(RoutingProvider provider, RouteCache cache, CircuitBreaker breaker,
+                           int batchSize, int maxConcurrentCalls, long timeoutMillis) {
         this.provider = provider;
         this.cache = cache;
         this.breaker = breaker;
         this.batchSize = batchSize;
         this.concurrentCalls = new Semaphore(maxConcurrentCalls);
+        this.timeoutMillis = timeoutMillis;
+        this.callers = Executors.newFixedThreadPool(maxConcurrentCalls, runnable -> {
+            Thread thread = new Thread(runnable, "routing-call");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     @Override
@@ -88,23 +109,37 @@ public class ResilientRouter implements Router {
         return calls;
     }
 
+    // The call runs on its own thread so a provider that hangs cannot hang the trip.
     private boolean callOnce(List<String> keys, List<RouteRequest> chunk, Map<String, Long> answers) {
         concurrentCalls.acquireUninterruptibly();
+        Future<List<Long>> call = callers.submit(() -> provider.drivingMeters(chunk));
         try {
-            List<Long> meters = provider.drivingMeters(chunk);
+            List<Long> meters = call.get(timeoutMillis, TimeUnit.MILLISECONDS);
             for (int i = 0; i < keys.size(); i++) {
                 cache.put(keys.get(i), meters.get(i));
                 answers.put(keys.get(i), meters.get(i));
             }
             breaker.recordSuccess();
             return true;
-        } catch (RoutingException e) {
-            failures.incrementAndGet();
-            breaker.recordFailure();
-            return false;
+        } catch (TimeoutException e) {
+            call.cancel(true);
+            timeouts.incrementAndGet();
+            return callFailed();
+        } catch (ExecutionException e) {
+            return callFailed();
+        } catch (InterruptedException e) {
+            call.cancel(true);
+            Thread.currentThread().interrupt();
+            return callFailed();
         } finally {
             concurrentCalls.release();
         }
+    }
+
+    private boolean callFailed() {
+        failures.incrementAndGet();
+        breaker.recordFailure();
+        return false;
     }
 
     private void pauseBeforeRetry() {
@@ -127,6 +162,10 @@ public class ResilientRouter implements Router {
     private RouteRequest snapped(RouteRequest r) {
         return new RouteRequest(cellOf(r.fromLatitude()) * CELL_DEGREES, cellOf(r.fromLongitude()) * CELL_DEGREES,
                 cellOf(r.toLatitude()) * CELL_DEGREES, cellOf(r.toLongitude()) * CELL_DEGREES);
+    }
+
+    public long timeoutCount() {
+        return timeouts.get();
     }
 
     public long failureCount() {
