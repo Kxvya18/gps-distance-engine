@@ -43,8 +43,8 @@ sequenceDiagram
     else evidence changed
         S->>E: compute and audit, outside any transaction
         S->>T: save(result, H2, expected H1)
-        T->>D: begin
-        alt stored hash is not H1, or the row version moved
+        T->>D: begin, lock the trip row
+        alt stored hash is not H1
             T-->>S: refused
             S->>S: wait a random moment, start again from fresh data
         else still H1
@@ -56,7 +56,7 @@ sequenceDiagram
     end
 ```
 
-The provider call must not sit inside a database transaction, so computing happens outside one. That creates a read-compute-write race, which the concurrency test exposed: two updates could read the same trip and the second save dropped the first one's pings. The expected-hash check closes it, and `@Version` covers the instant between that check and the commit.
+The provider call must not sit inside a database transaction, so computing happens outside one. That creates a read-compute-write race, which the concurrency test exposed: two updates could read the same trip and the second save dropped the first one's pings. The expected-hash check closes it. The save and the close also lock the trip row, so they take turns, and a late update always sees an invoice closed before it.
 
 ## Consistency model
 
@@ -77,8 +77,9 @@ Latency is traded against accuracy in one place. A slow provider is given 2 seco
 | Out-of-order or duplicate pings | Same km | Sorted and deduplicated before any rule runs |
 | Bad fix burst, including at trip start | Those pings are dropped | Longest plausible chain |
 | Concurrent updates to one trip | Both succeed | Compare-and-set with retry, or 409 after 10 attempts |
-| Auditor disagrees | `NEEDS_REVIEW` | Blocked from billing until reviewed |
-| Postgres down | A generic error, expected to be a 500. Not tested | The caller retries, and replays are safe |
+| Close at the same moment as a late-ping update | Both succeed, and the correction is kept | The trip row is locked during save and close, so they take turns |
+| Auditor disagrees, or a route is rejected | `NEEDS_REVIEW` | Blocked from billing, and any correction is held, until closed with `reviewed=true` |
+| Postgres down | 503, "Temporarily unavailable, safe to retry", within about 3 seconds | The app stays up and recovers when Postgres returns. Retrying the same request is safe. Tested by stopping Postgres |
 
 ## Trade-offs
 
@@ -86,11 +87,6 @@ Latency is traded against accuracy in one place. A slow provider is given 2 seco
 - **Evidence is stored as JSON in the trip row.** It is simple and makes recompute easy, at about 160 KB per trip.
 - **The cache and breaker live in one JVM.** Threads share them cheaply, and losing them on restart costs only some extra provider calls.
 - **The auditor is separate code, not a separate team.** It has its own formula and shares no engine code, but a misreading of the written rules would pass both. The simulator's true distances are a second check.
-
-## Known limits
-
-- An invoice closed at the same moment as a late-ping update can miss that correction, and two closes at the same moment can return a 500.
-- A late-ping update that puts a closed trip into `NEEDS_REVIEW` still issues its correction.
 
 ## Left out on purpose
 

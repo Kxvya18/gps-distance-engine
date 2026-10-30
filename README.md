@@ -75,7 +75,7 @@ The naive sum over-counts here because false fixes add more than the tunnels los
 | `POST /api/trips` | Admin, operator | Submit a trip |
 | `GET /api/trips/{id}` | All, employees for their own trips only | Result with every segment |
 | `POST /api/trips/{id}/late-pings` | Admin, operator | Add late pings |
-| `POST /api/trips/{id}/close` | Admin, operator | Close the invoice |
+| `POST /api/trips/{id}/close` | Admin, operator | Close the invoice. Add `?reviewed=true` for a trip flagged `NEEDS_REVIEW` |
 | `GET /api/trips/{id}/invoice` | Admin, operator | Invoice and corrections |
 | `POST /api/admin/provider?down=true` | Admin | Switch the fake provider off for demos |
 | `GET /actuator/prometheus` | Admin, operator | Metrics |
@@ -114,12 +114,15 @@ The architecture, sequence diagram and failure-mode table are in [docs/design-no
 | Automatic recompute with the real scheduler | `AutomaticRecoveryTest` |
 | Provider timeouts and partial batch failure | `ResilientRouterTest`, `DistanceCalculatorTest` |
 | Late pings make a signed correction and a replay changes nothing | `RecomputeServiceTest` |
+| A flagged trip's correction waits for review | `RecomputeServiceTest` |
+| Closing and late pings at the same moment stay correct | `RecomputeServiceTest` |
+| Database outage gives a safe 503 | `DatabaseDownTest` |
 | Concurrent late pings lose nothing | `RecomputeServiceTest`, `ConcurrencyTest` |
 | Tenant isolation and roles | `TenantIsolationTest` |
 | No personal data in logs or errors | `LogPrivacyTest`, `TenantIsolationTest` |
 | The auditor catches tampered results | `TripAuditorTest` |
 
-There are 105 tests. Separately, the running stack was tested with `kill -9` while a trip was degraded, and the trip recovered after restart. That check was manual.
+There are 109 tests. Separately, two manual checks ran on the full Docker stack: `kill -9` while a trip was degraded, which recovered after restart, and stopping Postgres, which gave a 503 and recovered when it returned.
 
 ## Assumptions
 

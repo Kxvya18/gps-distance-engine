@@ -40,7 +40,7 @@ Each segment is rounded to whole metres, and the total is the exact sum of those
 |---|---|---|
 | `OK` | All rules passed | Yes |
 | `DEGRADED` | Contains an estimate because the provider was down | No, it is recomputed automatically |
-| `NEEDS_REVIEW` | A route was rejected, the auditor disagreed, or there were too few points | Only with `?reviewed=true` |
+| `NEEDS_REVIEW` | A route was rejected, the auditor disagreed, or there were too few points | Only with `?reviewed=true`. On a closed invoice, any correction is held until then |
 
 ## Decisions where the spec is silent
 
