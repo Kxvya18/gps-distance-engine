@@ -11,6 +11,8 @@ import com.moveinsync.distance.error.NotFoundException;
 import com.moveinsync.distance.model.Milestone;
 import com.moveinsync.distance.model.Ping;
 import com.moveinsync.distance.model.RuleConfig;
+import com.moveinsync.distance.model.Segment;
+import com.moveinsync.distance.model.SegmentRule;
 import com.moveinsync.distance.model.TripEvidence;
 import com.moveinsync.distance.model.TripResult;
 import com.moveinsync.distance.monitoring.TripMetrics;
@@ -137,6 +139,11 @@ public class TripService {
         TripResult result = audited(calculator.calculate(evidence));
         store.save(evidence, result, hash, previousHash);
         metrics.tripProcessed(result.status().name());
+        for (Segment segment : result.segments()) {
+            if (segment.rule() == SegmentRule.REJECTED_DISTANCE || segment.rule() == SegmentRule.REJECTED_SPEED) {
+                metrics.segmentRejected(segment.rule().name());
+            }
+        }
         log.info("trip computed tripId={} status={} meters={} providerCalls={}",
                 result.tripId(), result.status(), result.totalMeters(), result.providerCalls());
         return result;

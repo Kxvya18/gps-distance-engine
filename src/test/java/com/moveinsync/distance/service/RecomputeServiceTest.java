@@ -3,11 +3,13 @@ package com.moveinsync.distance.service;
 import com.moveinsync.distance.core.DistanceCalculator;
 import com.moveinsync.distance.dto.InvoiceResponse;
 import com.moveinsync.distance.error.ConflictException;
+import com.moveinsync.distance.model.Milestone;
 import com.moveinsync.distance.model.Ping;
 import com.moveinsync.distance.model.TripEvidence;
 import com.moveinsync.distance.model.TripResult;
 import com.moveinsync.distance.routing.FakeRoutingProvider;
 import com.moveinsync.distance.simulation.TripSimulator;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,8 @@ class RecomputeServiceTest {
     private DistanceCalculator calculator;
     @Autowired
     private FakeRoutingProvider provider;
+    @Autowired
+    private MeterRegistry registry;
 
     private final TripSimulator simulator = new TripSimulator(9);
 
@@ -168,12 +172,24 @@ class RecomputeServiceTest {
 
         provider.setDown(false);
         waitForBreakerCoolDown();
+        assertTrue(registry.get("trips_degraded_oldest_age_seconds").gauge().value() >= 5, "lag metric");
         int fixed = 0;
         for (int i = 0; i < 50 && fixed == 0; i++) {
             fixed = recompute.recomputeDegradedTrips();
         }
         assertTrue(fixed >= 1);
         assertEquals(TripResult.Status.OK, trips.get(TENANT, degraded.tripId()).status());
+    }
+
+    @Test
+    void rejectedRoutesAreCounted() {
+        Milestone near = new Milestone(Milestone.Type.PICKUP, "e1", 12.9, 77.6, 0L, null, null, null);
+        Milestone far = new Milestone(Milestone.Type.DROP, "e1", 16.0, 77.6, 3_600_000L, null, null, null);
+        TripEvidence trip = new TripEvidence("trip-" + UUID.randomUUID(), TENANT, TripEvidence.Direction.LOGIN,
+                List.of(), List.of(near, far), 12.9, 77.6);
+
+        assertEquals(TripResult.Status.NEEDS_REVIEW, trips.submit(trip).status());
+        assertTrue(registry.get("segments_rejected").tag("rule", "REJECTED_DISTANCE").counter().count() >= 1);
     }
 
     // Moves the whole trip so no cached route can answer it.

@@ -15,4 +15,6 @@ public interface TripRecordRepository extends JpaRepository<TripRecord, Long> {
     List<TripRecord> findByStatus(String status, Pageable page);
 
     long countByStatus(String status);
+
+    Optional<TripRecord> findFirstByStatusOrderByDegradedSinceAsc(String status);
 }

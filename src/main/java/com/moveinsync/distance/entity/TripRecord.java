@@ -36,6 +36,7 @@ public class TripRecord {
     private String status;
     private int providerCalls;
     private Instant updatedAt;
+    private Instant degradedSince;
 
     @Column(columnDefinition = "text")
     private String evidenceJson;
@@ -61,6 +62,12 @@ public class TripRecord {
         this.evidenceJson = evidenceJson;
         this.resultJson = resultJson;
         this.updatedAt = Instant.now();
+        boolean degraded = "DEGRADED".equals(status);
+        if (!degraded) {
+            this.degradedSince = null;
+        } else if (this.degradedSince == null) {
+            this.degradedSince = this.updatedAt;
+        }
     }
 
     public String getTenantId() {
@@ -85,6 +92,10 @@ public class TripRecord {
 
     public String getStatus() {
         return status;
+    }
+
+    public Instant getDegradedSince() {
+        return degradedSince;
     }
 
     public String getEvidenceJson() {
