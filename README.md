@@ -38,9 +38,9 @@ Measured on an Apple M2 with 8 cores and 16 GB RAM, with other Docker workloads 
 | Measure | Result |
 |---|---|
 | Trips and pings | 10,000 trips, 15.05M pings |
-| Run time with cache | 16.3 s, including generating the trips (615 trips/s) |
-| Engine time per trip | p50 1.90 ms, p99 53.88 ms |
-| Peak heap seen | 233 MB |
+| Run time with cache | 10.4 s, including generating the trips (962 trips/s) |
+| Engine time per trip | p50 1.21 ms, p99 37.72 ms |
+| Peak heap seen | 187 MB |
 | Audit failures | 0 |
 
 **Provider calls**
@@ -62,7 +62,7 @@ The cache result depends on the simulator repeating 300 fixed corridors, as shif
 
 The naive sum over-counts here because false fixes add more than the tunnels lose. The problem statement describes under-payment, and the real direction depends on the data. These figures apply to simulated trips only, on a street grid where road distance is known exactly, and real GPS may behave differently. The fake provider's 20 ms latency is an assumption.
 
-**Failure run:** the provider died halfway through 10,000 trips. All trips finished, 1,250 were marked `DEGRADED`, and every one was recomputed after recovery to exactly the same metres as the healthy run.
+**Failure run:** the provider died halfway through 10,000 trips. All trips finished, 1,248 were marked `DEGRADED`, and every one was recomputed after recovery to exactly the same metres as the healthy run.
 
 ## API
 
@@ -98,12 +98,13 @@ The architecture, sequence diagram and failure-mode table are in [docs/design-no
 | Every billing rule, including boundaries | `SegmentRuleEngineTest` |
 | A bad burst leaves the distance unchanged | `DistanceCalculatorTest`, `PingCleanerTest` |
 | Provider failure, then exact recovery | `ProviderFailureTest` |
+| Provider timeouts and partial batch failure | `ResilientRouterTest`, `DistanceCalculatorTest` |
 | Late pings make a signed correction and a replay changes nothing | `RecomputeServiceTest` |
 | Concurrent late pings lose nothing | `RecomputeServiceTest`, `ConcurrencyTest` |
 | Tenant isolation and roles | `TenantIsolationTest` |
 | The auditor catches tampered results | `TripAuditorTest` |
 
-There are 75 tests. Separately, the running stack was tested with `kill -9` while a trip was degraded, and the trip recovered after restart. That check was manual.
+There are 82 tests. Separately, the running stack was tested with `kill -9` while a trip was degraded, and the trip recovered after restart. That check was manual.
 
 ## Assumptions
 
@@ -134,8 +135,17 @@ Route answers are cached by snapped start and end cell, with LRU eviction at 200
 
 ## Monitoring
 
-Prometheus metrics include `trips_processed_total`, `trips_degraded_waiting`, `trips_failed_audit_total`, `invoice_corrections_total`, `provider_failures`, `provider_retries`, `provider_breaker_open`, `route_cache_hits`, `route_cache_misses` and `trip_update_retries_total`. Logs are structured JSON and carry trip ids, never locations or contact details.
+| On-call question | Prometheus metric |
+|---|---|
+| Lag | `trips_degraded_oldest_age_seconds` |
+| Error rate | `http_server_requests_seconds_count`, `provider_failures`, `provider_timeouts` |
+| Rejections | `segments_rejected_total`, `trips_failed_audit_total` |
+| Retries | `provider_retries`, `trip_update_retries_total` |
+| Queue depth | `trips_degraded_waiting` |
+| Provider health | `provider_breaker_open`, `route_cache_hits`, `route_cache_misses` |
+
+Logs are structured JSON and carry trip ids, never locations or contact details.
 
 ## Trade-offs
 
-A trip is always answered, using an estimate if needed, but an estimate can never be billed. Availability applies to reads and consistency applies to money. The full list, and what was left out, is in the [design note](docs/design-note.md).
+A trip is always answered, using an estimate if needed, but an estimate can never be billed. Availability applies to reads and consistency applies to money. Latency is bounded by a 2-second provider timeout, and accuracy is traded for speed by the fallback estimate. The full list, and what was left out, is in the [design note](docs/design-note.md).

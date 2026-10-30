@@ -4,20 +4,20 @@ Command: java -Xmx2g -cp target/classes com.moveinsync.distance.benchmark.Benchm
 Trips: 10000, threads: 8, fake provider latency: 20 ms
 
 == Cache and batching ==
-Wall time: 16.3 s (includes generating the fake trips)
-Trips per second: 615
+Wall time: 10.4 s (includes generating the fake trips)
+Trips per second: 962
 Pings: 15050842
-Engine time per trip: p50 1.90 ms, p99 53.88 ms
-Peak heap seen: 233 MB
+Engine time per trip: p50 1.21 ms, p99 37.72 ms
+Peak heap seen: 187 MB
 Statuses: OK=10000 DEGRADED=0 NEEDS_REVIEW=0
 Trips failing the audit: 0
 
 == Batching only, no cache ==
-Wall time: 33.8 s (includes generating the fake trips)
-Trips per second: 296
+Wall time: 30.3 s (includes generating the fake trips)
+Trips per second: 330
 Pings: 15050842
-Engine time per trip: p50 24.32 ms, p99 41.36 ms
-Peak heap seen: 234 MB
+Engine time per trip: p50 22.70 ms, p99 26.44 ms
+Peak heap seen: 188 MB
 Statuses: OK=10000 DEGRADED=0 NEEDS_REVIEW=0
 Trips failing the audit: 0
 Provider calls: 20594 gaps one call each -> 10000 batched -> 2098 batched and cached
@@ -27,11 +27,11 @@ Naive sum of raw pings: mean abs error 7.56%, mean signed error +5.95%
 This engine: mean abs error 1.26%, mean signed error -1.26%, worst trip 2.90%
 
 == Provider dies halfway ==
-Wall time: 13.4 s (includes generating the fake trips)
-Trips per second: 748
+Wall time: 8.8 s (includes generating the fake trips)
+Trips per second: 1134
 Pings: 15050842
-Engine time per trip: p50 1.74 ms, p99 43.60 ms
-Peak heap seen: 236 MB
-Statuses: OK=8750 DEGRADED=1250 NEEDS_REVIEW=0
+Engine time per trip: p50 1.22 ms, p99 28.98 ms
+Peak heap seen: 191 MB
+Statuses: OK=8752 DEGRADED=1248 NEEDS_REVIEW=0
 Trips failing the audit: 0
-Recomputed 1250 degraded trips after recovery. Different from the healthy run: 0
+Recomputed 1248 degraded trips after recovery. Different from the healthy run: 0
