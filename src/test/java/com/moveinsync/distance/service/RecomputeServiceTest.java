@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -168,6 +169,56 @@ class RecomputeServiceTest {
         InvoiceResponse invoice = trips.invoice(TENANT, partial.tripId());
         assertEquals(billed, invoice.billedMeters());
         assertEquals(finalResult.totalMeters(), invoice.currentMeters());
+    }
+
+    @Test
+    void closingWhileLatePingsArriveNeverLosesTheCorrection() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        for (int round = 0; round < 40; round++) {
+            TripEvidence full = simulator.generate(20 + round).evidence();
+            List<Ping> sorted = new ArrayList<>(full.pings());
+            sorted.sort(java.util.Comparator.comparingLong(Ping::timestampMillis));
+            List<Ping> late = sorted.subList(100, 300);
+            List<Ping> early = new ArrayList<>(sorted.subList(0, 100));
+            early.addAll(sorted.subList(300, sorted.size()));
+            TripEvidence partial = withPings(full, early);
+            trips.submit(partial);
+
+            CountDownLatch go = new CountDownLatch(1);
+            Future<?> close = pool.submit(() -> {
+                go.await();
+                return trips.close(TENANT, partial.tripId(), false);
+            });
+            Future<?> update = pool.submit(() -> {
+                go.await();
+                return trips.addLatePings(TENANT, partial.tripId(), late);
+            });
+            go.countDown();
+            close.get();
+            update.get();
+
+            long finalMeters = trips.get(TENANT, partial.tripId()).totalMeters();
+            assertEquals(finalMeters, trips.invoice(TENANT, partial.tripId()).currentMeters(), "round " + round);
+        }
+        pool.shutdown();
+    }
+
+    @Test
+    void manyClosesAtOnceAllGetTheSameInvoice() throws Exception {
+        TripEvidence evidence = simulator.generate(7).evidence();
+        TripEvidence trip = withPings(evidence, evidence.pings());
+        trips.submit(trip);
+
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        List<Future<InvoiceResponse>> closes = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            closes.add(pool.submit(() -> trips.close(TENANT, trip.tripId(), false)));
+        }
+        InvoiceResponse first = closes.get(0).get();
+        for (Future<InvoiceResponse> close : closes) {
+            assertEquals(first, close.get());
+        }
+        pool.shutdown();
     }
 
     @Test

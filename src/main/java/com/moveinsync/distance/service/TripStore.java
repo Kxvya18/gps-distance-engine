@@ -3,6 +3,8 @@ package com.moveinsync.distance.service;
 import com.moveinsync.distance.entity.Invoice;
 import com.moveinsync.distance.entity.InvoiceCorrection;
 import com.moveinsync.distance.entity.TripRecord;
+import com.moveinsync.distance.error.ConflictException;
+import com.moveinsync.distance.error.NotFoundException;
 import com.moveinsync.distance.error.StaleUpdateException;
 import com.moveinsync.distance.model.TripEvidence;
 import com.moveinsync.distance.model.TripResult;
@@ -45,7 +47,7 @@ public class TripStore {
         String tenant = evidence.tenantId();
         String tripId = evidence.tripId();
 
-        TripRecord record = trips.findByTenantIdAndTripId(tenant, tripId)
+        TripRecord record = trips.lockTrip(tenant, tripId)
                 .orElseGet(() -> new TripRecord(tenant, tripId));
         if (!Objects.equals(record.getEvidenceHash(), previousHash)) {
             throw new StaleUpdateException("Trip changed while it was being computed");
@@ -78,11 +80,20 @@ public class TripStore {
         return trips.findByTenantIdAndTripId(tenant, tripId);
     }
 
+    // Closing locks the trip row, so a late-ping update lands either before the bill is
+    // written or after it, and then sees the invoice and adds its correction.
     @Transactional
-    public Invoice closeInvoice(TripRecord record) {
-        return invoices.findByTenantIdAndTripId(record.getTenantId(), record.getTripId())
-                .orElseGet(() -> invoices.save(new Invoice(record.getTenantId(), record.getTripId(),
-                        record.getTotalMeters(), record.getRuleVersion())));
+    public Invoice close(String tenant, String tripId, boolean reviewed) {
+        TripRecord record = trips.lockTrip(tenant, tripId)
+                .orElseThrow(() -> new NotFoundException("Trip not found"));
+        if ("DEGRADED".equals(record.getStatus())) {
+            throw new ConflictException("Trip uses estimated distances and cannot be billed until it is recomputed");
+        }
+        if ("NEEDS_REVIEW".equals(record.getStatus()) && !reviewed) {
+            throw new ConflictException("Trip needs review before it can be billed");
+        }
+        return invoices.findByTenantIdAndTripId(tenant, tripId)
+                .orElseGet(() -> invoices.save(new Invoice(tenant, tripId, record.getTotalMeters(), record.getRuleVersion())));
     }
 
     @Transactional(readOnly = true)

@@ -119,14 +119,7 @@ public class TripService {
     }
 
     public InvoiceResponse close(String tenant, String tripId, boolean reviewed) {
-        TripRecord record = load(tenant, tripId);
-        if ("DEGRADED".equals(record.getStatus())) {
-            throw new ConflictException("Trip uses estimated distances and cannot be billed until it is recomputed");
-        }
-        if ("NEEDS_REVIEW".equals(record.getStatus()) && !reviewed) {
-            throw new ConflictException("Trip needs review before it can be billed");
-        }
-        Invoice invoice = store.closeInvoice(record);
+        Invoice invoice = store.close(tenant, tripId, reviewed);
         return InvoiceResponse.from(invoice, store.corrections(tenant, tripId));
     }
 
