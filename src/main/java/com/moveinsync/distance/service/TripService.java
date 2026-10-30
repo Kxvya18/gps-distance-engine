@@ -6,6 +6,7 @@ import com.moveinsync.distance.core.EvidenceHasher;
 import com.moveinsync.distance.dto.InvoiceResponse;
 import com.moveinsync.distance.entity.Invoice;
 import com.moveinsync.distance.entity.TripRecord;
+import com.moveinsync.distance.error.BadRequestException;
 import com.moveinsync.distance.error.ConflictException;
 import com.moveinsync.distance.error.NotFoundException;
 import com.moveinsync.distance.model.Milestone;
@@ -173,7 +174,7 @@ public class TripService {
     private void requireValidPings(List<Ping> pings) {
         for (Ping ping : pings) {
             if (Math.abs(ping.latitude()) > 90 || Math.abs(ping.longitude()) > 180) {
-                throw new IllegalArgumentException("A ping has an impossible location");
+                throw new BadRequestException("A ping has an impossible location");
             }
         }
     }

@@ -145,6 +145,30 @@ class TenantIsolationTest {
     }
 
     @Test
+    void invalidFieldsAreNamedWithoutTheirValues() throws Exception {
+        String secret = "9876543210";
+        String bad = "{\"tripId\":\"\",\"direction\":\"LOGIN\",\"pings\":[],\"milestones\":[],"
+                + "\"plannedStops\":[],\"adHocRiders\":[],\"officeLatitude\":" + secret + ",\"officeLongitude\":1}";
+        String response = mvc.perform(post("/api/trips").header("Authorization", login("admin-a"))
+                        .contentType(MediaType.APPLICATION_JSON).content(bad))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Invalid or missing fields: officeLatitude, tripId"))
+                .andReturn().getResponse().getContentAsString();
+        assertFalse(response.contains(secret), response);
+    }
+
+    @Test
+    void impossiblePingGivesAMeaningfulMessage() throws Exception {
+        TripRequest good = request("trip-" + UUID.randomUUID(), "emp-1");
+        TripRequest bad = new TripRequest(good.tripId(), good.direction(), List.of(new Ping(999, 77.6, 0, 10)),
+                good.milestones(), good.plannedStops(), good.adHocRiders(), 12.9, 77.6);
+        mvc.perform(post("/api/trips").header("Authorization", login("admin-a")).contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(bad)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("A ping has an impossible location"));
+    }
+
+    @Test
     void errorsDoNotEchoRequestData() throws Exception {
         String secret = "9876543210-home-address";
         String bad = "{\"tripId\":\"\",\"direction\":\"" + secret + "\"}";

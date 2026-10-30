@@ -29,3 +29,13 @@ app:
   demo-password: ${DEMO_PASSWORD}
   provider-latency-millis: 20
   recompute-delay-millis: 5000
+  rules:
+    version: 1
+    max-speed-kmh: 120
+    max-accuracy-meters: 50
+    short-gap-seconds: 70
+    parked-speed-kmh: 5
+    max-route-meters: 100000
+    road-factor: 1.4
+    office-radius-meters: 400
+    include-no-shows: false

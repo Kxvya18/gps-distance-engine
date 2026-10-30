@@ -6,7 +6,7 @@ import com.moveinsync.distance.dto.TripResponse;
 import com.moveinsync.distance.error.NotFoundException;
 import com.moveinsync.distance.model.Ping;
 import com.moveinsync.distance.model.TripResult;
-import com.moveinsync.distance.routing.FakeRoutingProvider;
+import com.moveinsync.distance.routing.BaseRoutingProvider;
 import com.moveinsync.distance.security.CurrentUser;
 import com.moveinsync.distance.service.TripService;
 import jakarta.validation.Valid;
@@ -28,9 +28,9 @@ import java.util.Map;
 public class TripController {
 
     private final TripService trips;
-    private final FakeRoutingProvider provider;
+    private final BaseRoutingProvider provider;
 
-    public TripController(TripService trips, FakeRoutingProvider provider) {
+    public TripController(TripService trips, BaseRoutingProvider provider) {
         this.trips = trips;
         this.provider = provider;
     }
@@ -74,7 +74,7 @@ public class TripController {
         return trips.invoice(user.tenantId(), tripId);
     }
 
-    // Lets the demo and failure tests switch the fake provider off and on.
+    // Lets the demo and failure tests switch the provider off and on.
     @PostMapping("/api/admin/provider")
     public Map<String, Boolean> setProviderDown(@RequestParam boolean down) {
         provider.setDown(down);
