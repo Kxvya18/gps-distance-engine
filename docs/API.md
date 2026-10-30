@@ -1,6 +1,6 @@
 # API cookbook
 
-Recipes you can copy and run. Start the stack with `docker compose up --build`, then set these once.
+Recipes you can copy and run. Start the stack with `docker compose up --build`, then run these from the repo folder, in order. Recipes 4 to 6 build on Recipe 1, so run them on a fresh database with `docker compose down -v` first if you want the same numbers.
 
 ```bash
 API=http://localhost:8080
@@ -42,29 +42,29 @@ What you get back:
 
 ```json
 {
-  "tripId": "demo-1793376577",
+  "tripId": "demo",
   "status": "OK",
   "ruleVersion": 1,
-  "totalMeters": 34075,
-  "billableKm": 34.1,
+  "totalMeters": 34194,
+  "billableKm": 34.2,
   "providerCalls": 1,
-  "metersByRule": { "SHORT_GAP_AERIAL": 22055, "ROUTED": 12020 },
+  "metersByRule": { "SHORT_GAP_AERIAL": 22128, "ROUTED": 12066 },
   "segments": [
     {
       "fromTimeMillis": 1790000420000,
-      "toTimeMillis": 1790000423000,
-      "distanceMeters": 21,
+      "toTimeMillis": 1790000420000,
+      "distanceMeters": 1,
       "rule": "SHORT_GAP_AERIAL",
-      "fromLatitude": 13.1,
-      "fromLongitude": 77.6,
-      "toLatitude": 13.1,
-      "toLongitude": 77.6
+      "fromLatitude": 12.82707956274702,
+      "fromLongitude": 77.42109327638806,
+      "toLatitude": 12.82708354683285,
+      "toLongitude": 77.42108612896347
     }
   ]
 }
 ```
 
-Values in `segments` are shortened here to show the shape.
+This is the real output for the sample trip on a fresh database, with only the first segment shown. The Recipe 1 command above removes `segments` to keep the output short.
 
 ## Recipe 2: Read a trip
 
@@ -108,11 +108,11 @@ curl -s $API/api/trips/demo/invoice -H "Authorization: Bearer $TOKEN" | jq .
 
 ```json
 {
-  "tripId": "demo-1793376577",
-  "billedMeters": 34117,
+  "tripId": "demo",
+  "billedMeters": 34194,
   "ruleVersion": 1,
-  "corrections": [ { "deltaMeters": -58, "deltaKm": "-0.1 km" } ],
-  "currentMeters": 34059
+  "corrections": [ { "deltaMeters": -59, "deltaKm": "-0.1 km" } ],
+  "currentMeters": 34135
 }
 ```
 
@@ -124,7 +124,7 @@ curl -s $API/api/trips/demo/invoice -H "Authorization: Bearer $TOKEN" | jq .
 curl -s -X POST "$API/api/admin/provider?down=true" -H "Authorization: Bearer $TOKEN"
 ```
 
-Trips submitted now return `DEGRADED` unless their routes are already cached. Switch it back with `down=false`, and they recover by themselves.
+New trips now return `DEGRADED`, unless their routes are already cached. **Switch it back with `down=false` afterwards**, and they recover by themselves within seconds.
 
 ## Recipe 8: Read the metrics
 

@@ -111,7 +111,7 @@ sequenceDiagram
             T-->>S: refused
             S->>S: wait a random moment, start again from fresh data
         else still H1
-            T->>D: update trip and insert correction (new km - km billed so far)
+            T->>D: update trip, and if OK and billed, insert correction (new km - km billed so far)
             D-->>T: commit
             T-->>S: saved
             S-->>V: new result

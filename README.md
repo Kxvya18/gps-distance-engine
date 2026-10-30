@@ -14,11 +14,11 @@ MoveInSync SDE case study 1: GPS Gap Backfill & Billable Distance Reconstruction
 |---|---|
 | **Accuracy** | 1.26% average error, worst trip 2.73%, on simulated trips |
 | **Cost** | 9.82 provider calls per trip down to 0.21 |
-| **Speed** | 10,000 trips and 15M pings in 7.6 s, 154 MB heap |
+| **Speed** | 10,000 trips and 15M pings in about 8 s, 154 MB heap |
 | **Determinism** | 0 of 10,000 trips differ between runs |
 | **Failure** | Provider outage: every trip recovers to the exact metres |
-| **API** | 194 new trips per second on Postgres, p99 94 ms, 0 errors |
-| **Tests** | 137 passing, 95.8% line coverage, 86.6% mutation score |
+| **API** | About 195 new trips per second on Postgres, p99 about 100 ms, 0 errors |
+| **Tests** | 137 passing, 95.8% line coverage, 86.0% mutation score |
 
 ## Find what you need
 
@@ -100,7 +100,7 @@ TOKEN=$(curl -s -X POST $API/api/auth/login -H 'Content-Type: application/json' 
 | Kill the maps service | `curl -X POST "$API/api/admin/provider?down=true" -H "Authorization: Bearer $TOKEN"` | Trips still return, marked `DEGRADED`, and cannot be billed |
 | Bring it back | Same call with `down=false` | Degraded trips fix themselves within seconds |
 | Crash the app | `docker compose kill -s SIGKILL app`, then `docker compose up -d app` | Degraded trips are picked up after restart |
-| Stop the database | `docker compose stop db`, then `docker compose start db` | Callers get a 503 in about 3 seconds, and the same request works after restart |
+| Stop the database | `docker compose stop db`, then `docker compose start db` | Callers get a 503 within about 3 seconds, and the same request works after restart |
 | Read another client's trip | Log in as `admin-b` and fetch a `client-a` trip | 404, so you can't even learn that it exists |
 | Replay a trip | Send the same trip twice | Same result, no new provider calls |
 | Send garbage | Send a bad JSON body | A clear 400 that repeats none of your data |
@@ -138,12 +138,12 @@ Measured on an Apple M2 with 8 cores and 16 GB RAM, on Java 17. Full output is i
 | Measure | Result |
 |---|---|
 | Trips and pings | 10,000 trips, 15.05M pings |
-| Run time | 7.6 s, including generating the trips |
-| Throughput | 1,310 trips per second |
-| Engine time per trip | p50 0.44 ms, p99 26.08 ms |
+| Run time | 7.6 to 8.8 s across runs, including generating the trips |
+| Throughput | 1,140 to 1,310 trips per second |
+| Engine time per trip | p50 about 0.45 ms, p99 26 to 30 ms |
 | Peak heap | 154 MB |
 | Provider calls per trip | 1.00 before caching, 0.21 after |
-| HTTP on Postgres, new trips | 194 per second, p50 35.5 ms, p99 94.0 ms |
+| HTTP on Postgres, new trips | 194 to 196 per second, p50 about 35 ms, p99 94 to 107 ms |
 
 These are simulated trips and a fake provider with an assumed 20 ms delay.
 

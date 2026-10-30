@@ -49,7 +49,7 @@ curl -s $API/actuator/prometheus -H "Authorization: Bearer $TOKEN" | grep -E '^(
 
 ### Callers are getting 503
 
-**Means:** the app can't reach Postgres. Requests fail in about 3 seconds, and it's safe to retry them.
+**Means:** the app can't reach Postgres. Requests fail within about 3 seconds, and it's safe to retry them.
 
 1. Check the database: `docker compose ps db`.
 2. Start it if needed: `docker compose start db`.

@@ -1,6 +1,6 @@
 # Proof catalogue
 
-Every test in the project, what it proves, and how good the tests themselves are. All 137 tests pass, and they run in about 20 seconds with `./mvnw test`.
+Every test in the project, what it proves, and how good the tests themselves are. All 137 tests pass, and they run in about 25 seconds with `./mvnw test`.
 
 ## The three questions
 
@@ -8,7 +8,7 @@ Every test in the project, what it proves, and how good the tests themselves are
 |---|---|---|
 | Do the tests pass? | Automated tests | **137 of 137** |
 | Do they reach the code? | Line and branch coverage | **95.8%** of lines, **93.8%** of branches |
-| Would they notice a bug? | Mutation score | **86.6%** of deliberate bugs caught |
+| Would they notice a bug? | Mutation score | **86.0%** of deliberate bugs caught |
 
 Coverage only shows that a line ran. Mutation testing goes further: it plants small bugs on purpose, such as turning `<` into `<=`, and checks whether any test fails. So it tests the tests.
 
@@ -35,35 +35,17 @@ Some tests count in more than one row.
 | `model` | 27 of 27 | 100.0% | 0 of 0 | n/a |
 | `simulation` | 143 of 143 | 100.0% | 91 of 94 | 96.8% |
 | `dto` | 25 of 25 | 100.0% | 12 of 12 | 100.0% |
-| `audit` | 56 of 56 | 100.0% | 51 of 53 | 96.2% |
-| `core` | 198 of 201 | 98.5% | 148 of 153 | 96.7% |
-| `security` | 43 of 44 | 97.7% | 4 of 6 | 66.7% |
-| `routing` | 176 of 184 | 95.7% | 49 of 50 | 98.0% |
-| `monitoring` | 28 of 30 | 93.3% | 0 of 2 | 0.0% |
-| `entity` | 49 of 53 | 92.5% | 3 of 4 | 75.0% |
-| `service` | 136 of 148 | 91.9% | 47 of 54 | 87.0% |
-| `error` | 24 of 27 | 88.9% | 0 of 0 | n/a |
-| `controller` | 34 of 42 | 81.0% | 4 of 8 | 50.0% |
-
-The `benchmark` package is left out, because it holds the measuring tools themselves.
-
-## Mutation testing
-
-![Mutation score by package](charts/mutation.svg)
-
-| Package | Bugs planted | Caught | Missed | Score |
-|---|---:|---:|---:|---:|
 | `audit` | 69 | 55 | 14 | 79.7% |
-| `core` | 152 | 140 | 12 | 92.1% |
+| `core` | 145 | 133 | 12 | 91.7% |
 | `model` | 5 | 5 | 0 | 100.0% |
-| `routing` | 95 | 78 | 17 | 82.1% |
-| **Total** | **321** | **278** | **43** | **86.6%** |
+| `routing` | 95 | 77 | 18 | 81.1% |
+| **Total** | **314** | **270** | **44** | **86.0%** |
 
 This covers the plain Java engine, using PIT. Spring-based tests weren't part of this run.
 
 ### What it found
 
-The first run scored **78.3%**, and that was useful. It showed that the auditor's checks for the rejected and estimate rules were barely tested: deleting those checks went unnoticed. That's the kind of gap coverage alone wouldn't show, so 27 tests were added across the auditor, evidence hash, maths, anchors and router, and the score reached 86.6%.
+The first run scored **78.3%**, and that was useful. It showed that the auditor's checks for the rejected and estimate rules were barely tested: deleting those checks went unnoticed. That's the kind of gap coverage alone wouldn't show, so 27 tests were added across the auditor, evidence hash, maths, anchors and router, and the score reached 86.0%.
 
 ### What it still misses
 
@@ -71,7 +53,7 @@ The first run scored **78.3%**, and that was useful. It showed that the auditor'
 |---|---:|---|
 | `<` changed to `<=`, mostly on decimal numbers | 21 | Two doubles rarely land exactly equal, so most of these make no practical difference |
 | Simple getters used by metrics and tests | 6 | Used by Spring tests, which this run left out |
-| Everything else | 16 | Mainly retry pauses, thread set-up and rarely used error paths. These were reviewed by category, not one by one |
+| Everything else | 17 | Mainly retry pauses, thread set-up and rarely used error paths. These were reviewed by category, not one by one |
 
 ## Bugs the tests found during the build
 

@@ -13,10 +13,10 @@ Thirteen experiments, each asking one question about the engine. Every number he
 | Is it accurate? | 1.26% average error, worst trip 2.73% | [E1](#e1-does-it-beat-the-two-simple-methods), [E2](#e2-how-spread-out-are-the-errors) |
 | Does it fix the problem the case study describes? | Yes, both failures were reproduced and fixed | [E1](#e1-does-it-beat-the-two-simple-methods) |
 | Does it save money? | 9.82 provider calls per trip down to 0.21 | [E4](#e4-how-much-do-provider-calls-fall) |
-| Is it fast? | 10,000 trips in 7.6 s, 15M pings, 154 MB heap | [E7](#e7-does-it-hold-up-as-volume-grows) |
+| Is it fast? | 10,000 trips in about 8 s, 15M pings, 154 MB heap | [E7](#e7-does-it-hold-up-as-volume-grows) |
 | Does the km ever change between runs? | Never: 0 of 10,000 trips differed | [E11](#e11-can-the-km-ever-change) |
-| Does an outage change the bill? | No: 3,808 degraded trips recovered to the exact metres | [E10](#e10-what-does-an-outage-do) |
-| Does it work over real HTTP and Postgres? | 2,000 trips, 0 errors, p99 94 ms | [E13](#e13-how-does-the-real-api-behave) |
+| Does an outage change the bill? | No: every degraded trip recovered to the exact metres | [E10](#e10-what-does-an-outage-do) |
+| Does it work over real HTTP and Postgres? | 2,000 trips, 0 errors, p99 about 100 ms | [E13](#e13-how-does-the-real-api-behave) |
 | How good are the tests? | See [TESTS.md](TESTS.md) | |
 
 ---
@@ -152,7 +152,7 @@ By trip direction, the engine is just as steady:
 
 Run times include generating the fake trips.
 
-**What it means:** Memory stays flat, because trips are handled one at a time and released. Throughput rises with volume because the cache warms up, so later trips rarely wait for the provider. The main benchmark, in [benchmark-results.txt](benchmark-results.txt), gave 10,000 trips in 7.6 s at 1,310 trips per second with a 154 MB peak.
+**What it means:** Memory stays flat, because trips are handled one at a time and released. Throughput rises with volume because the cache warms up, so later trips rarely wait for the provider. The main benchmark, in [benchmark-results.txt](benchmark-results.txt), gave 10,000 trips in 7.6 s at 1,310 trips per second with a 154 MB peak, and 8.8 s on a repeat run.
 
 ### E8. Do more cores help?
 
@@ -291,4 +291,21 @@ docker compose up -d --build
 java -cp target/classes com.moveinsync.distance.benchmark.ApiLoadRunner http://localhost:8080 2000 8
 ```
 
-The `ExperimentRunner` run takes about 7 minutes.
+The `ExperimentRunner` run takes about 8 minutes.
+
+## Did it reproduce?
+
+Yes. All of it was rerun from a fresh clone of this repository, and the results were compared with the numbers above.
+
+| Result | On a second run |
+|---|---|
+| Accuracy, error histogram, rule mix, provider cost, repeatability | **Identical** |
+| Cache hit rate at 1,000 entries | 76.38% against 76.36%, because eviction depends on thread order |
+| Degraded trips in the outage | 3,460 against 3,808, because it depends on which trips finish during the outage |
+| Trips different after recompute | 0 in both |
+| Main benchmark run time | 8.8 s against 7.6 s |
+| Thread scaling at 8 threads | 5.13× against 5.21× |
+| Peak heap in E7 | Up to 236 MB against 198 MB, depending on garbage collection |
+| API, new trips | 196 per second, p99 107.1 ms, against 194 and 94.0 ms |
+
+So anything that decides a bill repeats exactly, and timings vary by a few percent, as timings do.
