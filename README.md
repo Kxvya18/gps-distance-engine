@@ -50,9 +50,21 @@ A vendor says: "My driver did 31 km and your GPS says 18.4." The cab lost GPS fo
 
 These are the exact numbers from the case study's example, reproduced in `PdfExamplesTest`. The split between stretches is the test's own setup.
 
+## Requirements
+
+| To do this | You need |
+|---|---|
+| Run the app | Docker, with internet for the first build, and port 8080 free or `APP_PORT` set |
+| Run the tests and benchmarks | Java 17 |
+| Run the demo script | `curl`, `jq` and a bash shell |
+
+**Tested on:** macOS on an Apple M2, from a fresh clone. Docker and the tests should also work on Linux and Windows, but they haven't been tested there. On Windows, `demo.sh` needs Git Bash or WSL.
+
+Timings will differ on other machines. The kilometres won't, because the same input and rule version always give the same result.
+
 ## Run it
 
-You need Docker. Everything starts with one command:
+Everything starts with one command:
 
 ```bash
 docker compose up --build
