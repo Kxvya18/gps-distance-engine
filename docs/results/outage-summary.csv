@@ -1,0 +1,2 @@
+degraded_trips,mean_estimate_error_pct,lowest_pct,highest_pct,different_after_recompute,audit_failures
+3808,0.258,-0.642,2.466,0,0

@@ -1,0 +1,7 @@
+provider_latency_ms,seconds_with_cache,seconds_without_cache
+0,0.93,0.96
+5,1.86,4.64
+20,5.22,16.55
+50,11.02,36.59
+100,20.64,68.15
+200,39.53,130.76

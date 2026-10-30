@@ -1,0 +1,5 @@
+gap_share_pct,trips,naive_mean_signed_pct,engine_mean_signed_pct
+0-15,2598,11.386,-1.271
+15-25,3367,7.516,-1.238
+25-35,2334,3.219,-1.285
+35-100,1701,-1.509,-1.278

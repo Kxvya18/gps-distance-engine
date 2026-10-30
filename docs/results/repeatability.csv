@@ -1,0 +1,5 @@
+condition,total_meters_over_all_trips
+8 threads with cache,348502206
+8 threads without cache,348502206
+1 thread with cache,348502206
+8 threads, small cache,348502206

@@ -1,0 +1,5 @@
+approach,calls,calls_per_trip
+Route every raw gap,98237,9.82
+One call per real gap,20594,2.06
+Batched,10000,1.00
+Batched and cached,2104,0.21

@@ -1,0 +1,3 @@
+direction,mean_abs_pct,mean_signed_pct,p50_abs_pct,p90_abs_pct,p99_abs_pct,max_abs_pct,min_signed_pct,max_signed_pct,trips
+LOGIN,1.262,-1.262,1.267,1.503,1.693,1.954,-1.954,-0.395,5903
+LOGOUT,1.269,-1.269,1.275,1.510,1.748,2.730,-2.730,-0.495,4097

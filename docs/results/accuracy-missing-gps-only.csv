@@ -1,0 +1,4 @@
+method,mean_abs_pct,mean_signed_pct,p50_abs_pct,p90_abs_pct,p99_abs_pct,max_abs_pct,min_signed_pct,max_signed_pct
+Sum of pings,7.736,-7.736,7.518,12.138,14.832,15.467,-15.467,-2.059
+Route every gap,1.320,-1.320,1.319,1.505,1.648,1.946,-1.946,-0.822
+This engine,1.246,-1.246,1.249,1.491,1.698,2.939,-2.939,-0.341

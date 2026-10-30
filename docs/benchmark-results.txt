@@ -1,22 +1,22 @@
-Machine: Apple M2, 8 cores, 16 GB RAM, openjdk version "17.0.18" 2026-01-20. Other Docker workloads were running on the machine.
+Machine: Apple M2, 8 cores, 16 GB RAM, openjdk version "17.0.18" 2026-01-20. Other containers stopped for this run.
 Command: java -Xmx2g -cp target/classes com.moveinsync.distance.benchmark.BenchmarkRunner 10000 20
 
 Trips: 10000, threads: 8, fake provider latency: 20 ms
 
 == Cache and batching ==
-Wall time: 8.3 s (includes generating the fake trips)
-Trips per second: 1202
+Wall time: 7.6 s (includes generating the fake trips)
+Trips per second: 1310
 Pings: 15050459
-Engine time per trip: p50 0.57 ms, p99 30.13 ms
+Engine time per trip: p50 0.44 ms, p99 26.08 ms
 Peak heap seen: 154 MB
 Statuses: OK=10000 DEGRADED=0 NEEDS_REVIEW=0
 Trips failing the audit: 0
 
 == Batching only, no cache ==
-Wall time: 29.8 s (includes generating the fake trips)
-Trips per second: 335
+Wall time: 32.6 s (includes generating the fake trips)
+Trips per second: 307
 Pings: 15050459
-Engine time per trip: p50 22.64 ms, p99 26.62 ms
+Engine time per trip: p50 25.86 ms, p99 26.81 ms
 Peak heap seen: 156 MB
 Statuses: OK=10000 DEGRADED=0 NEEDS_REVIEW=0
 Trips failing the audit: 0
@@ -29,11 +29,11 @@ Naive sum of raw pings: mean abs error 7.57%, mean signed error +5.98%
 This engine: mean abs error 1.26%, mean signed error -1.26%, worst trip 2.73%
 
 == Provider dies halfway ==
-Wall time: 6.7 s (includes generating the fake trips)
-Trips per second: 1495
+Wall time: 6.0 s (includes generating the fake trips)
+Trips per second: 1668
 Pings: 15050459
-Engine time per trip: p50 0.51 ms, p99 26.65 ms
-Peak heap seen: 190 MB
+Engine time per trip: p50 0.45 ms, p99 26.07 ms
+Peak heap seen: 158 MB
 Statuses: OK=8734 DEGRADED=1266 NEEDS_REVIEW=0
 Trips failing the audit: 0
 Recomputed 1266 degraded trips after recovery. Different from the healthy run: 0
