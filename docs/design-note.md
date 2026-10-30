@@ -4,6 +4,19 @@
 
 Vendors are paid per km, and GPS loses data. The engine rebuilds each trip's distance from pings and known stops, using routing calls only for real gaps, and explains every km.
 
+## Main components
+
+| Component | Responsibility |
+|---|---|
+| `PingCleaner` | Removes duplicates, sorts, drops weak fixes and teleports |
+| `AnchorBuilder` | Adds employee, no-show and office anchors with their fallbacks |
+| `SegmentRuleEngine` | Picks the rule and distance for each pair of points |
+| `DistanceCalculator` | Runs the pipeline for one trip |
+| `ResilientRouter` | Cache, batching, timeout, retry and circuit breaker around the provider |
+| `TripAuditor` | Separately rechecks every result before billing |
+| `TripService`, `TripStore` | Compute outside a transaction, then save atomically |
+| `RecomputeService` | Retries degraded trips on a schedule |
+
 ## Architecture
 
 ```mermaid
@@ -25,6 +38,54 @@ flowchart LR
 ```
 
 The engine has no Spring dependency, so it runs in tests and in the benchmark with no server or database.
+
+## Data model
+
+```mermaid
+erDiagram
+    TRIP_RECORD ||--o| INVOICE : "billed as"
+    INVOICE ||--o{ INVOICE_CORRECTION : "corrected by"
+    TRIP_RECORD {
+        string tenant_id "unique with trip_id"
+        string trip_id
+        int rule_version
+        string evidence_hash "detects replays"
+        long total_meters
+        string status "OK, DEGRADED, NEEDS_REVIEW"
+        int provider_calls
+        timestamp degraded_since
+        text evidence_json "input for recompute"
+        text result_json "segments and labels"
+        long version "optimistic lock"
+    }
+    INVOICE {
+        string tenant_id "unique with trip_id"
+        string trip_id
+        long billed_meters "never changes"
+        int rule_version
+        timestamp closed_at
+    }
+    INVOICE_CORRECTION {
+        string tenant_id
+        string trip_id
+        long delta_meters "signed"
+        string evidence_hash "one correction per hash"
+        timestamp created_at
+    }
+```
+
+Trip input is pings, milestones, planned stops, ad-hoc riders and the office location. Distances are whole metres in a `long`.
+
+## APIs
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/auth/login` | Get a signed token carrying the tenant and role |
+| `POST /api/trips` | Submit evidence and get the labelled result |
+| `GET /api/trips/{id}` | Read a result |
+| `POST /api/trips/{id}/late-pings` | Add late pings and recompute |
+| `POST /api/trips/{id}/close` | Close the invoice, with `?reviewed=true` for flagged trips |
+| `GET /api/trips/{id}/invoice` | Read the invoice and its corrections |
 
 ## Hardest flow: late pings after billing
 
