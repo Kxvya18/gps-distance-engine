@@ -86,4 +86,4 @@ curl -s "$API/api/trips/$DOWN" -H "Authorization: Bearer $ADMIN" | jq "$summary"
 echo
 echo "== 9. What an on-call engineer sees =="
 curl -s "$API/actuator/prometheus" -H "Authorization: Bearer $ADMIN" |
-  grep -E '^(trips_processed|trips_degraded_waiting|trips_failed_audit|invoice_corrections|provider_failures|provider_retries|provider_breaker_open|route_cache_(hits|misses))' || true
+  grep -E '^(trips_processed|trips_degraded_waiting|trips_degraded_oldest_age_seconds|trips_failed_audit|segments_rejected|invoice_corrections|provider_failures|provider_timeouts|provider_retries|provider_breaker_open|route_cache_(hits|misses))' || true
