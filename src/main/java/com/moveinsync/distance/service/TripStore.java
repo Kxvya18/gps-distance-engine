@@ -56,8 +56,9 @@ public class TripStore {
                 result.providerCalls(), mapper.writeValueAsString(evidence), mapper.writeValueAsString(result));
         trips.save(record);
 
-        // An estimate never goes on a bill. The correction waits for the real recompute.
-        if (result.status() != TripResult.Status.DEGRADED) {
+        // Only a clean result changes a bill. An estimate waits for the recompute, and a
+        // flagged result waits for a person to close it with reviewed=true.
+        if (result.status() == TripResult.Status.OK) {
             invoices.findByTenantIdAndTripId(tenant, tripId)
                     .ifPresent(invoice -> addCorrection(invoice, tenant, tripId, result.totalMeters(), evidenceHash));
         }
@@ -92,8 +93,14 @@ public class TripStore {
         if ("NEEDS_REVIEW".equals(record.getStatus()) && !reviewed) {
             throw new ConflictException("Trip needs review before it can be billed");
         }
-        return invoices.findByTenantIdAndTripId(tenant, tripId)
-                .orElseGet(() -> invoices.save(new Invoice(tenant, tripId, record.getTotalMeters(), record.getRuleVersion())));
+        Optional<Invoice> existing = invoices.findByTenantIdAndTripId(tenant, tripId);
+        if (existing.isEmpty()) {
+            return invoices.save(new Invoice(tenant, tripId, record.getTotalMeters(), record.getRuleVersion()));
+        }
+        if (reviewed) {
+            addCorrection(existing.get(), tenant, tripId, record.getTotalMeters(), record.getEvidenceHash());
+        }
+        return existing.get();
     }
 
     @Transactional(readOnly = true)

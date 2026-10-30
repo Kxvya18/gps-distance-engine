@@ -172,6 +172,39 @@ class RecomputeServiceTest {
     }
 
     @Test
+    void flaggedTripHoldsItsCorrectionUntilAPersonReviewsIt() {
+        // A short trip near the office, then a longer chain of late pings about 330 km away.
+        List<Ping> pings = new ArrayList<>();
+        List<Ping> farAway = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            pings.add(new Ping(12.9 + i * 0.0001, 77.6, i * 5000L, 10));
+            farAway.add(new Ping(15.9 + i * 0.0001, 77.6, 3_600_000L + i * 5000L, 10));
+        }
+        farAway.addAll(List.of(new Ping(15.91, 77.6, 3_800_000L, 10), new Ping(15.9101, 77.6, 3_805_000L, 10)));
+        Milestone pickup = new Milestone(Milestone.Type.PICKUP, "e1", 12.9, 77.6, 0L);
+        String tripId = "trip-" + UUID.randomUUID();
+        TripEvidence trip = new TripEvidence(tripId, TENANT, TripEvidence.Direction.LOGIN, pings, List.of(pickup),
+                List.of(), List.of(), 12.9, 77.6);
+
+        long billed = trips.submit(trip).totalMeters();
+        trips.close(TENANT, tripId, false);
+
+        TripResult flagged = trips.addLatePings(TENANT, tripId, farAway);
+        assertEquals(TripResult.Status.NEEDS_REVIEW, flagged.status());
+        assertEquals(0, trips.invoice(TENANT, tripId).corrections().size(), "no correction before review");
+        assertEquals(billed, trips.invoice(TENANT, tripId).currentMeters());
+
+        assertThrows(ConflictException.class, () -> trips.close(TENANT, tripId, false));
+
+        InvoiceResponse reviewed = trips.close(TENANT, tripId, true);
+        assertEquals(1, reviewed.corrections().size());
+        assertEquals(flagged.totalMeters(), reviewed.currentMeters());
+        assertEquals(billed, reviewed.billedMeters());
+
+        assertEquals(1, trips.close(TENANT, tripId, true).corrections().size(), "reviewing twice adds nothing");
+    }
+
+    @Test
     void closingWhileLatePingsArriveNeverLosesTheCorrection() throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(2);
         for (int round = 0; round < 40; round++) {
