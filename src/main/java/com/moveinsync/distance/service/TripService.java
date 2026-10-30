@@ -82,7 +82,7 @@ public class TripService {
             List<Ping> merged = new ArrayList<>(old.pings());
             merged.addAll(latePings);
             TripEvidence updated = new TripEvidence(old.tripId(), old.tenantId(), old.direction(), merged,
-                    old.milestones(), old.officeLatitude(), old.officeLongitude());
+                    old.milestones(), old.plannedStops(), old.adHocRiders(), old.officeLatitude(), old.officeLongitude());
             String hash = EvidenceHasher.hash(updated, config.ruleVersion());
             if (hash.equals(record.getEvidenceHash())) {
                 return readResult(record);

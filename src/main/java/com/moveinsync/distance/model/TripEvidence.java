@@ -10,6 +10,8 @@ public record TripEvidence(
         Direction direction,
         List<Ping> pings,
         List<Milestone> milestones,
+        List<PlannedStop> plannedStops,
+        List<AdHocRider> adHocRiders,
         double officeLatitude,
         double officeLongitude) {
 

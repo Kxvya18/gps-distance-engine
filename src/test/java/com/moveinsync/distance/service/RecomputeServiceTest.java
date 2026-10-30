@@ -53,7 +53,7 @@ class RecomputeServiceTest {
 
     private TripEvidence withPings(TripEvidence e, List<Ping> pings) {
         return new TripEvidence("trip-" + UUID.randomUUID(), TENANT, e.direction(), pings, e.milestones(),
-                e.officeLatitude(), e.officeLongitude());
+                e.plannedStops(), e.adHocRiders(), e.officeLatitude(), e.officeLongitude());
     }
 
     @Test
@@ -183,10 +183,10 @@ class RecomputeServiceTest {
 
     @Test
     void rejectedRoutesAreCounted() {
-        Milestone near = new Milestone(Milestone.Type.PICKUP, "e1", 12.9, 77.6, 0L, null, null, null);
-        Milestone far = new Milestone(Milestone.Type.DROP, "e1", 16.0, 77.6, 3_600_000L, null, null, null);
+        Milestone near = new Milestone(Milestone.Type.PICKUP, "e1", 12.9, 77.6, 0L);
+        Milestone far = new Milestone(Milestone.Type.DROP, "e1", 16.0, 77.6, 3_600_000L);
         TripEvidence trip = new TripEvidence("trip-" + UUID.randomUUID(), TENANT, TripEvidence.Direction.LOGIN,
-                List.of(), List.of(near, far), 12.9, 77.6);
+                List.of(), List.of(near, far), List.of(), List.of(), 12.9, 77.6);
 
         assertEquals(TripResult.Status.NEEDS_REVIEW, trips.submit(trip).status());
         assertTrue(registry.get("segments_rejected").tag("rule", "REJECTED_DISTANCE").counter().count() >= 1);
@@ -198,7 +198,7 @@ class RecomputeServiceTest {
         for (Ping p : e.pings()) {
             moved.add(new Ping(p.latitude() + 0.3, p.longitude() + 0.3, p.timestampMillis(), p.accuracyMeters()));
         }
-        return new TripEvidence(e.tripId(), e.tenantId(), e.direction(), moved, List.of(),
+        return new TripEvidence(e.tripId(), e.tenantId(), e.direction(), moved, List.of(), List.of(), List.of(),
                 e.officeLatitude(), e.officeLongitude());
     }
 

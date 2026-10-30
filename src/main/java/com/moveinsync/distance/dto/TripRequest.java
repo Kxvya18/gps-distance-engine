@@ -1,7 +1,9 @@
 package com.moveinsync.distance.dto;
 
+import com.moveinsync.distance.model.AdHocRider;
 import com.moveinsync.distance.model.Milestone;
 import com.moveinsync.distance.model.Ping;
+import com.moveinsync.distance.model.PlannedStop;
 import com.moveinsync.distance.model.TripEvidence;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -17,10 +19,13 @@ public record TripRequest(
         @NotNull TripEvidence.Direction direction,
         @NotNull @Size(max = 20_000) List<Ping> pings,
         @NotNull @Size(max = 200) List<Milestone> milestones,
+        @NotNull @Size(max = 200) List<PlannedStop> plannedStops,
+        @NotNull @Size(max = 200) List<AdHocRider> adHocRiders,
         @DecimalMin("-90") @DecimalMax("90") double officeLatitude,
         @DecimalMin("-180") @DecimalMax("180") double officeLongitude) {
 
     public TripEvidence toEvidence(String tenantId) {
-        return new TripEvidence(tripId, tenantId, direction, pings, milestones, officeLatitude, officeLongitude);
+        return new TripEvidence(tripId, tenantId, direction, pings, milestones, plannedStops, adHocRiders,
+                officeLatitude, officeLongitude);
     }
 }

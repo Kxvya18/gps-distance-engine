@@ -1,7 +1,9 @@
 package com.moveinsync.distance.core;
 
+import com.moveinsync.distance.model.AdHocRider;
 import com.moveinsync.distance.model.Milestone;
 import com.moveinsync.distance.model.Ping;
+import com.moveinsync.distance.model.PlannedStop;
 import com.moveinsync.distance.model.TripEvidence;
 
 import java.nio.charset.StandardCharsets;
@@ -29,12 +31,21 @@ public final class EvidenceHasher {
             milestones.add(milestone.toString());
         }
 
+        TreeSet<String> riders = new TreeSet<>();
+        for (PlannedStop stop : evidence.plannedStops()) {
+            riders.add(stop.toString());
+        }
+        for (AdHocRider rider : evidence.adHocRiders()) {
+            riders.add(rider.toString());
+        }
+
         List<String> parts = new ArrayList<>();
         parts.add("rules=" + ruleVersion);
         parts.add(String.valueOf(evidence.direction()));
         parts.add(evidence.officeLatitude() + "," + evidence.officeLongitude());
         parts.addAll(pings);
         parts.addAll(milestones);
+        parts.addAll(riders);
 
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

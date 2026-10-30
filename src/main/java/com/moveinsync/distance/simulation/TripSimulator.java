@@ -1,7 +1,9 @@
 package com.moveinsync.distance.simulation;
 
+import com.moveinsync.distance.model.AdHocRider;
 import com.moveinsync.distance.model.Milestone;
 import com.moveinsync.distance.model.Ping;
+import com.moveinsync.distance.model.PlannedStop;
 import com.moveinsync.distance.model.TripEvidence;
 
 import java.util.ArrayList;
@@ -41,6 +43,8 @@ public class TripSimulator {
 
         List<Ping> pings = new ArrayList<>();
         List<Milestone> milestones = new ArrayList<>();
+        List<PlannedStop> plannedStops = new ArrayList<>();
+        List<AdHocRider> adHocRiders = new ArrayList<>();
         long startMillis = DAY_START_MILLIS + index * 60_000L;
         long time = startMillis;
 
@@ -72,7 +76,7 @@ public class TripSimulator {
 
             if (nextStop < stops.size() && reachedStop(stops.get(nextStop), km, logout)) {
                 double[] where = position(corridor, stops.get(nextStop));
-                milestones.add(employeeMilestone(logout, nextStop, where, time, random));
+                milestones.add(employeeMilestone(logout, nextStop, where, time, random, plannedStops, adHocRiders));
                 nextStop++;
                 boolean basement = basementStop && nextStop == 2;
                 time = stopFor(pings, random, where, time, basement);
@@ -86,14 +90,16 @@ public class TripSimulator {
         }
 
         double[] end = position(corridor, logout ? corridor.totalKm() : 0);
-        addRemainingStops(milestones, stops, nextStop, corridor, logout, time, random);
+        for (int i = nextStop; i < stops.size(); i++) {
+            milestones.add(employeeMilestone(logout, i, position(corridor, stops.get(i)), time, random, plannedStops, adHocRiders));
+        }
         milestones.add(tripEnd(end, time, logout, random));
 
         addBadData(pings, random);
 
         TripEvidence evidence = new TripEvidence("trip-" + index, "client-" + (index % 5),
                 logout ? TripEvidence.Direction.LOGOUT : TripEvidence.Direction.LOGIN,
-                pings, milestones, OFFICE_LAT, OFFICE_LON);
+                pings, milestones, plannedStops, adHocRiders, OFFICE_LAT, OFFICE_LON);
         return new SimulatedTrip(evidence, Math.round(corridor.totalKm() * 1000));
     }
 
@@ -101,23 +107,23 @@ public class TripSimulator {
         return logout ? km >= stopKm : km <= stopKm;
     }
 
-    private Milestone employeeMilestone(boolean logout, int stopNumber, double[] where, long time, Random random) {
+    // Every rider is planned or ad-hoc. A few milestones arrive with no location or time.
+    private Milestone employeeMilestone(boolean logout, int stopNumber, double[] where, long time, Random random,
+                                        List<PlannedStop> plannedStops, List<AdHocRider> adHocRiders) {
         Milestone.Type type = logout ? Milestone.Type.DROP : Milestone.Type.PICKUP;
         String employee = "emp-" + stopNumber;
-        double plannedLat = where[0] + 0.0002;
-        double plannedLon = where[1] + 0.0002;
-        long plannedTime = time + 30_000;
+        double knownLat = where[0] + 0.0002;
+        double knownLon = where[1] + 0.0002;
+        long knownTime = time + 30_000;
+        if (random.nextDouble() < 0.2) {
+            adHocRiders.add(new AdHocRider(employee, knownLat, knownLon, knownTime));
+        } else {
+            plannedStops.add(new PlannedStop(employee, knownLat, knownLon, knownTime));
+        }
         if (random.nextDouble() < 0.05) {
-            return new Milestone(type, employee, null, null, null, plannedLat, plannedLon, plannedTime);
+            return new Milestone(type, employee, null, null, null);
         }
-        return new Milestone(type, employee, where[0], where[1], time, plannedLat, plannedLon, plannedTime);
-    }
-
-    private void addRemainingStops(List<Milestone> milestones, List<Double> stops, int nextStop, Corridor corridor,
-                                   boolean logout, long time, Random random) {
-        for (int i = nextStop; i < stops.size(); i++) {
-            milestones.add(employeeMilestone(logout, i, position(corridor, stops.get(i)), time, random));
-        }
+        return new Milestone(type, employee, where[0], where[1], time);
     }
 
     // Parked cab: pings keep arriving, unless it is a basement where GPS is lost.
@@ -141,7 +147,7 @@ public class TripSimulator {
     }
 
     private Milestone point(Milestone.Type type, String who, double[] where, long time) {
-        return new Milestone(type, who, where[0], where[1], time, null, null, null);
+        return new Milestone(type, who, where[0], where[1], time);
     }
 
     private void addPing(List<Ping> pings, Random random, double[] where, double driftNorth, double driftEast, long time) {

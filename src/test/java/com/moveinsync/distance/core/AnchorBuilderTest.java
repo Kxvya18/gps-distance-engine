@@ -1,6 +1,8 @@
 package com.moveinsync.distance.core;
 
+import com.moveinsync.distance.model.AdHocRider;
 import com.moveinsync.distance.model.Milestone;
+import com.moveinsync.distance.model.PlannedStop;
 import com.moveinsync.distance.model.RuleConfig;
 import com.moveinsync.distance.model.TrackPoint;
 import com.moveinsync.distance.model.TripEvidence;
@@ -16,89 +18,142 @@ class AnchorBuilderTest {
 
     private static final double OFFICE_LAT = 12.97;
     private static final double OFFICE_LON = 77.59;
+    private static final PlannedStop PLANNED = new PlannedStop("e1", 13.0, 77.7, 2000L);
+    private static final AdHocRider AD_HOC = new AdHocRider("e2", 13.1, 77.8, 3000L);
 
     private final AnchorBuilder builder = new AnchorBuilder(RuleConfig.defaults());
 
-    private TripEvidence tripWith(Milestone... milestones) {
-        return new TripEvidence("t1", "client1", TripEvidence.Direction.LOGIN, List.of(), List.of(milestones), OFFICE_LAT, OFFICE_LON);
+    private TripEvidence tripWith(TripEvidence.Direction direction, Milestone... milestones) {
+        return new TripEvidence("t1", "client1", direction, List.of(), List.of(milestones),
+                List.of(PLANNED), List.of(AD_HOC), OFFICE_LAT, OFFICE_LON);
     }
 
-    private Milestone milestone(Milestone.Type type, Double lat, Double lon, Long time,
-                                Double fallbackLat, Double fallbackLon, Long fallbackTime) {
-        return new Milestone(type, "e1", lat, lon, time, fallbackLat, fallbackLon, fallbackTime);
+    private TripEvidence loginTrip(Milestone... milestones) {
+        return tripWith(TripEvidence.Direction.LOGIN, milestones);
+    }
+
+    private Milestone milestone(Milestone.Type type, String employee, Double lat, Double lon, Long time) {
+        return new Milestone(type, employee, lat, lon, time);
     }
 
     @Test
     void usesActualDropWhenValid() {
-        List<TrackPoint> points = builder.build(tripWith(
-                milestone(Milestone.Type.DROP, 12.9, 77.6, 1000L, 13.0, 77.7, 2000L)), List.of());
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.DROP, "e1", 12.9, 77.6, 1000L)), List.of());
         assertEquals(12.9, points.get(0).latitude());
     }
 
     @Test
-    void fallsBackWhenActualIsInvalid() {
-        List<TrackPoint> points = builder.build(tripWith(
-                milestone(Milestone.Type.DROP, null, null, 1000L, 13.0, 77.7, 2000L)), List.of());
-        assertEquals(13.0, points.get(0).latitude());
-        assertEquals(2000L, points.get(0).timeMillis());
+    void plannedRiderFallsBackToPlannedLocationAndTime() {
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.DROP, "e1", null, null, 1000L)), List.of());
+        assertEquals(PLANNED.latitude(), points.get(0).latitude());
+        assertEquals(PLANNED.timeMillis(), points.get(0).timeMillis());
+    }
+
+    @Test
+    void adHocRiderFallsBackToProfileHomeAndSignInTime() {
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.PICKUP, "e2", null, null, null)), List.of());
+        assertEquals(AD_HOC.homeLatitude(), points.get(0).latitude());
+        assertEquals(AD_HOC.signInTimeMillis(), points.get(0).timeMillis());
+    }
+
+    @Test
+    void missingTimeMakesTheActualPointInvalid() {
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.DROP, "e1", 12.9, 77.6, null)), List.of());
+        assertEquals(PLANNED.latitude(), points.get(0).latitude());
     }
 
     @Test
     void zeroZeroLocationIsInvalid() {
-        List<TrackPoint> points = builder.build(tripWith(
-                milestone(Milestone.Type.PICKUP, 0.0, 0.0, 1000L, 13.0, 77.7, 2000L)), List.of());
-        assertEquals(13.0, points.get(0).latitude());
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.PICKUP, "e1", 0.0, 0.0, 1000L)), List.of());
+        assertEquals(PLANNED.latitude(), points.get(0).latitude());
+    }
+
+    @Test
+    void outOfRangeLocationIsInvalid() {
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.PICKUP, "e1", 95.0, 77.6, 1000L)), List.of());
+        assertEquals(PLANNED.latitude(), points.get(0).latitude());
+    }
+
+    @Test
+    void riderWithNoValidPointAndNoFallbackAddsNothing() {
+        assertTrue(builder.build(loginTrip(
+                milestone(Milestone.Type.DROP, "unknown", null, null, null)), List.of()).isEmpty());
     }
 
     @Test
     void noShowIsSkippedWhenFlagIsOff() {
-        List<TrackPoint> points = builder.build(tripWith(
-                milestone(Milestone.Type.NO_SHOW, 12.9, 77.6, 1000L, null, null, null)), List.of());
-        assertTrue(points.isEmpty());
+        assertTrue(builder.build(loginTrip(
+                milestone(Milestone.Type.NO_SHOW, "e1", 12.9, 77.6, 1000L)), List.of()).isEmpty());
     }
 
-    @Test
-    void noShowIsAddedWhenFlagIsOn() {
+    private AnchorBuilder withNoShowsOn() {
         RuleConfig d = RuleConfig.defaults();
-        RuleConfig flagOn = new RuleConfig(d.ruleVersion(), d.maxSpeedKmh(), d.maxAccuracyMeters(), d.shortGapSeconds(),
-                d.parkedSpeedKmh(), d.maxRouteMeters(), d.roadFactor(), d.officeRadiusMeters(), true);
-        List<TrackPoint> points = new AnchorBuilder(flagOn).build(tripWith(
-                milestone(Milestone.Type.NO_SHOW, 12.9, 77.6, 1000L, null, null, null)), List.of());
+        return new AnchorBuilder(new RuleConfig(d.ruleVersion(), d.maxSpeedKmh(), d.maxAccuracyMeters(), d.shortGapSeconds(),
+                d.parkedSpeedKmh(), d.maxRouteMeters(), d.roadFactor(), d.officeRadiusMeters(), true));
+    }
+
+    @Test
+    void noShowLocationIsAddedWhenFlagIsOn() {
+        List<TrackPoint> points = withNoShowsOn().build(loginTrip(
+                milestone(Milestone.Type.NO_SHOW, "e1", 12.9, 77.6, 1000L)), List.of());
         assertEquals(TrackPoint.Source.NO_SHOW_ANCHOR, points.get(0).source());
+        assertEquals(12.9, points.get(0).latitude());
     }
 
     @Test
-    void tripEndNearOfficeUsesActualPoint() {
-        double about100MetersAway = OFFICE_LAT + 0.0009;
-        List<TrackPoint> points = builder.build(tripWith(
-                milestone(Milestone.Type.TRIP_END, about100MetersAway, OFFICE_LON, 5000L, null, null, null)), List.of());
-        assertEquals(about100MetersAway, points.get(0).latitude());
+    void invalidNoShowLocationFallsBackToPlannedLocation() {
+        List<TrackPoint> points = withNoShowsOn().build(loginTrip(
+                milestone(Milestone.Type.NO_SHOW, "e1", null, null, 1000L)), List.of());
+        assertEquals(TrackPoint.Source.NO_SHOW_ANCHOR, points.get(0).source());
+        assertEquals(PLANNED.latitude(), points.get(0).latitude());
     }
 
     @Test
-    void tripEndFarFromOfficeUsesOfficeWithTripEndTime() {
-        double about1KmAway = OFFICE_LAT + 0.009;
-        List<TrackPoint> points = builder.build(tripWith(
-                milestone(Milestone.Type.TRIP_END, about1KmAway, OFFICE_LON, 5000L, null, null, null)), List.of());
+    void tripEndWithin400MetersUsesActualPoint() {
+        double about390MetersAway = OFFICE_LAT + 0.0035;
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.TRIP_END, "cab", about390MetersAway, OFFICE_LON, 5000L)), List.of());
+        assertEquals(about390MetersAway, points.get(0).latitude());
+    }
+
+    @Test
+    void tripEndBeyond400MetersUsesOfficeWithTripEndTime() {
+        double about410MetersAway = OFFICE_LAT + 0.0037;
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.TRIP_END, "cab", about410MetersAway, OFFICE_LON, 5000L)), List.of());
+        assertEquals(OFFICE_LAT, points.get(0).latitude());
+        assertEquals(OFFICE_LON, points.get(0).longitude());
+        assertEquals(5000L, points.get(0).timeMillis());
+    }
+
+    @Test
+    void invalidTripEndUsesOfficeWithTripEndTime() {
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.TRIP_END, "cab", null, null, 5000L)), List.of());
         assertEquals(OFFICE_LAT, points.get(0).latitude());
         assertEquals(5000L, points.get(0).timeMillis());
     }
 
     @Test
     void logoutTripAnchorsTheOfficeAtTheStartNotTheEnd() {
-        TripEvidence logout = new TripEvidence("t1", "client1", TripEvidence.Direction.LOGOUT, List.of(), List.of(
-                milestone(Milestone.Type.TRIP_START, OFFICE_LAT, OFFICE_LON, 1000L, null, null, null),
-                milestone(Milestone.Type.TRIP_END, 12.8, 77.5, 9000L, null, null, null)), OFFICE_LAT, OFFICE_LON);
-        List<TrackPoint> points = builder.build(logout, List.of());
+        List<TrackPoint> points = builder.build(tripWith(TripEvidence.Direction.LOGOUT,
+                milestone(Milestone.Type.TRIP_START, "cab", OFFICE_LAT, OFFICE_LON, 1000L),
+                milestone(Milestone.Type.TRIP_END, "cab", 12.8, 77.5, 9000L)), List.of());
         assertEquals(1, points.size());
         assertEquals(1000L, points.get(0).timeMillis());
     }
 
     @Test
     void pointsComeBackInTimeOrder() {
-        List<TrackPoint> points = builder.build(tripWith(
-                milestone(Milestone.Type.DROP, 12.9, 77.6, 9000L, null, null, null),
-                milestone(Milestone.Type.PICKUP, 12.8, 77.5, 1000L, null, null, null)), List.of());
+        List<TrackPoint> points = builder.build(loginTrip(
+                milestone(Milestone.Type.DROP, "e1", 12.9, 77.6, 9000L),
+                milestone(Milestone.Type.PICKUP, "e2", 12.8, 77.5, 1000L)), List.of());
         assertEquals(1000L, points.get(0).timeMillis());
         assertEquals(9000L, points.get(1).timeMillis());
     }

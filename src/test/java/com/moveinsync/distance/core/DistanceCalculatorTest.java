@@ -50,11 +50,11 @@ class DistanceCalculatorTest {
     }
 
     private Milestone drop(double km) {
-        return new Milestone(Milestone.Type.DROP, "e" + km, north(km), OFFICE_LON, Math.round(km * 100_000), null, null, null);
+        return new Milestone(Milestone.Type.DROP, "e" + km, north(km), OFFICE_LON, Math.round(km * 100_000));
     }
 
     private TripEvidence trip(List<Ping> pings, Milestone... milestones) {
-        return new TripEvidence("t1", "client1", TripEvidence.Direction.LOGOUT, pings, List.of(milestones), OFFICE_LAT, OFFICE_LON);
+        return new TripEvidence("t1", "client1", TripEvidence.Direction.LOGOUT, pings, List.of(milestones), List.of(), List.of(), OFFICE_LAT, OFFICE_LON);
     }
 
     private long countRule(TripResult result, SegmentRule rule) {

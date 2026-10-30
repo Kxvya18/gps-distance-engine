@@ -48,8 +48,8 @@ class TenantIsolationTest {
         for (int i = 0; i < 20; i++) {
             pings.add(new Ping(12.9 + i * 0.0001, 77.6, i * 5000L, 10));
         }
-        Milestone pickup = new Milestone(Milestone.Type.PICKUP, employee, 12.9, 77.6, 0L, null, null, null);
-        return new TripRequest(tripId, TripEvidence.Direction.LOGIN, pings, List.of(pickup), 12.9, 77.6);
+        Milestone pickup = new Milestone(Milestone.Type.PICKUP, employee, 12.9, 77.6, 0L);
+        return new TripRequest(tripId, TripEvidence.Direction.LOGIN, pings, List.of(pickup), List.of(), List.of(), 12.9, 77.6);
     }
 
     private String submit(String token, String employee) throws Exception {

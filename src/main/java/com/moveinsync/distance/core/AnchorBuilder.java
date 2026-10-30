@@ -1,7 +1,9 @@
 package com.moveinsync.distance.core;
 
+import com.moveinsync.distance.model.AdHocRider;
 import com.moveinsync.distance.model.Milestone;
 import com.moveinsync.distance.model.Ping;
+import com.moveinsync.distance.model.PlannedStop;
 import com.moveinsync.distance.model.RuleConfig;
 import com.moveinsync.distance.model.TrackPoint;
 import com.moveinsync.distance.model.TripEvidence;
@@ -27,10 +29,10 @@ public class AnchorBuilder {
 
         for (Milestone milestone : evidence.milestones()) {
             switch (milestone.type()) {
-                case PICKUP, DROP -> addAnchor(points, milestone, TrackPoint.Source.EMPLOYEE_ANCHOR);
+                case PICKUP, DROP -> addEmployeeAnchor(points, milestone, evidence);
                 case NO_SHOW -> {
                     if (config.includeNoShows()) {
-                        addAnchor(points, milestone, TrackPoint.Source.NO_SHOW_ANCHOR);
+                        addNoShowAnchor(points, milestone, evidence);
                     }
                 }
                 case TRIP_START -> {
@@ -53,16 +55,43 @@ public class AnchorBuilder {
         return points;
     }
 
-    // Uses the actual point if valid, otherwise the fallback. A milestone with neither adds nothing.
-    private void addAnchor(List<TrackPoint> points, Milestone m, TrackPoint.Source source) {
+    // Actual point if valid. Otherwise an ad-hoc rider's profile home and sign-in time,
+    // or a planned rider's planned location and time.
+    private void addEmployeeAnchor(List<TrackPoint> points, Milestone m, TripEvidence evidence) {
+        TrackPoint.Source source = TrackPoint.Source.EMPLOYEE_ANCHOR;
         if (isValid(m.latitude(), m.longitude(), m.timeMillis())) {
             points.add(new TrackPoint(m.latitude(), m.longitude(), m.timeMillis(), source));
-        } else if (isValid(m.fallbackLatitude(), m.fallbackLongitude(), m.fallbackTimeMillis())) {
-            points.add(new TrackPoint(m.fallbackLatitude(), m.fallbackLongitude(), m.fallbackTimeMillis(), source));
+            return;
+        }
+        for (AdHocRider rider : evidence.adHocRiders()) {
+            if (rider.employeeId().equals(m.employeeId())) {
+                points.add(new TrackPoint(rider.homeLatitude(), rider.homeLongitude(), rider.signInTimeMillis(), source));
+                return;
+            }
+        }
+        addPlannedStop(points, m, evidence, source);
+    }
+
+    // Actual no-show location if valid, otherwise the planned location.
+    private void addNoShowAnchor(List<TrackPoint> points, Milestone m, TripEvidence evidence) {
+        TrackPoint.Source source = TrackPoint.Source.NO_SHOW_ANCHOR;
+        if (isValid(m.latitude(), m.longitude(), m.timeMillis())) {
+            points.add(new TrackPoint(m.latitude(), m.longitude(), m.timeMillis(), source));
+            return;
+        }
+        addPlannedStop(points, m, evidence, source);
+    }
+
+    private void addPlannedStop(List<TrackPoint> points, Milestone m, TripEvidence evidence, TrackPoint.Source source) {
+        for (PlannedStop stop : evidence.plannedStops()) {
+            if (stop.employeeId().equals(m.employeeId())) {
+                points.add(new TrackPoint(stop.latitude(), stop.longitude(), stop.timeMillis(), source));
+                return;
+            }
         }
     }
 
-    // The office end of the trip. The actual point is used only if it is close to the office.
+    // The office end of the trip. The actual point is used only if it is within the office radius.
     private void addOfficeAnchor(List<TrackPoint> points, Milestone end, TripEvidence evidence) {
         if (end.timeMillis() == null) {
             return;
