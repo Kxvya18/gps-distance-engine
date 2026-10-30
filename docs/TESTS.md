@@ -7,7 +7,7 @@ Every test in the project, what it proves, and how good the tests themselves are
 | Question | Measure | Result |
 |---|---|---|
 | Do the tests pass? | Automated tests | **137 of 137** |
-| Do they reach the code? | Line and branch coverage | **95.8%** of lines, **93.8%** of branches |
+| Do they reach the code? | Line and branch coverage | **95.6%** of lines, **93.8%** of branches |
 | Would they notice a bug? | Mutation score | **86.0%** of deliberate bugs caught |
 
 Coverage only shows that a line ran. Mutation testing goes further: it plants small bugs on purpose, such as turning `<` into `<=`, and checks whether any test fails. So it tests the tests.

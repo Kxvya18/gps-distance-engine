@@ -108,7 +108,7 @@ Everything this project does not do, might get wrong, or has not proved. Each en
 
 ### T6. Mutation testing covers the engine only
 
-- **What:** PIT ran on `core`, `audit`, `routing` and `model`, using their own tests. 43 of 321 planted bugs were missed.
+- **What:** PIT ran on `core`, `audit`, `routing` and `model`, using their own tests. 44 of 314 planted bugs were missed.
 - **Effect:** the score says nothing about the Spring layers.
 - **Fix:** extend it to the service layer, which is slower to run.
 

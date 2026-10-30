@@ -18,7 +18,7 @@ MoveInSync SDE case study 1: GPS Gap Backfill & Billable Distance Reconstruction
 | **Determinism** | 0 of 10,000 trips differ between runs |
 | **Failure** | Provider outage: every trip recovers to the exact metres |
 | **API** | About 195 new trips per second on Postgres, p99 about 100 ms, 0 errors |
-| **Tests** | 137 passing, 95.8% line coverage, 86.0% mutation score |
+| **Tests** | 137 passing, 95.6% line coverage, 86.0% mutation score |
 
 ## Find what you need
 
