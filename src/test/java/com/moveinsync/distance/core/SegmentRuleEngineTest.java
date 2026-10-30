@@ -55,6 +55,14 @@ class SegmentRuleEngineTest {
     }
 
     @Test
+    void sameTimestampWithinGpsErrorIsAShortGapNotARoute() {
+        TrackPoint from = point(0, 100);
+        TrackPoint to = point(0.02, 100);
+        assertFalse(rules.needsRoute(from, to));
+        assertEquals(SegmentRule.SHORT_GAP_AERIAL, rules.localSegment(from, to).rule());
+    }
+
+    @Test
     void goodRouteIsUsed() {
         Segment segment = rules.routedSegment(point(0, 0), point(5, 600), 6500L);
         assertEquals(SegmentRule.ROUTED, segment.rule());

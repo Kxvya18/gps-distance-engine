@@ -45,7 +45,13 @@ public class SegmentRuleEngine {
     }
 
     private boolean isShortGap(TrackPoint from, TrackPoint to) {
-        return millisBetween(from, to) < config.shortGapSeconds() * 1000 && speedKmh(from, to) <= config.maxSpeedKmh();
+        return millisBetween(from, to) < config.shortGapSeconds() * 1000 && isPlausibleSpeed(from, to);
+    }
+
+    // A ping and an anchor can share a timestamp while sitting a few metres apart. That gives
+    // an infinite speed, but a jump within GPS error says nothing about how fast the cab moved.
+    private boolean isPlausibleSpeed(TrackPoint from, TrackPoint to) {
+        return aerialMeters(from, to) <= config.maxAccuracyMeters() || speedKmh(from, to) <= config.maxSpeedKmh();
     }
 
     private boolean isParked(TrackPoint from, TrackPoint to) {
