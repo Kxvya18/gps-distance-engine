@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: gps-distance-engine
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/distance}
+    username: ${DB_USER:distance}
+    password: ${DB_PASSWORD:distance}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+app:
+  jwt-secret: ${JWT_SECRET}
+  demo-password: ${DEMO_PASSWORD}
+  provider-latency-millis: 20
+  recompute-delay-millis: 5000
