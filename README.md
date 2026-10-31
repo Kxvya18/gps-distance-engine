@@ -12,6 +12,7 @@ MoveInSync SDE case study 1: GPS Gap Backfill & Billable Distance Reconstruction
 
 | | |
 |---|---|
+| **Demo** | [Watch the 3-minute video](https://drive.google.com/file/d/1-9a1xNVEPG-Uox1Vau_Lb8sbnWUYfMZb/view?usp=sharing) |
 | **Accuracy** | 1.26% average error, worst trip 2.73%, on simulated trips |
 | **Cost** | 9.82 provider calls per trip down to 0.21 |
 | **Speed** | 10,000 trips and 15M pings in about 8 s, 154 MB heap |
