@@ -35,7 +35,7 @@ Thirteen experiments, each asking one question about the engine. Every number he
 |---|---:|---:|
 | Sum of pings | **-7.74%** | +5.98% |
 | Route every gap | -1.32% | **+13.27%** |
-| This engine | -1.25% | -1.27% |
+| This engine | -1.25% | -1.26% |
 
 Average absolute error, including the worst trips:
 
@@ -43,7 +43,7 @@ Average absolute error, including the worst trips:
 |---|---:|---:|---:|---:|---:|
 | Sum of pings | 7.57% | 4.80% | 11.02% | 58.98% | 65.75% |
 | Route every gap | 13.27% | 10.72% | 15.28% | 63.98% | 70.41% |
-| This engine | 1.27% | 1.27% | 1.51% | 1.72% | 2.73% |
+| This engine | 1.26% | 1.27% | 1.51% | 1.72% | 2.73% |
 
 **What it means:** Both claims in the case study are confirmed. The sum of pings under-pays by 7.7% when dots go missing, and routing every gap over-pays by 13.3% when dots lie. The engine stays within 1.3% in both, so false data barely affects it. Its worst trip is better than the sum of pings' typical trip.
 
