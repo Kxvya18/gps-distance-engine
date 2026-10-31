@@ -10,7 +10,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// Tests for PingCleaner.
 class PingCleanerTest {
 
     private static final double NINE_KM_IN_DEGREES = 0.081;

@@ -45,7 +45,7 @@ This covers the plain Java engine, using PIT. Spring-based tests weren't part of
 
 ### What it found
 
-The first run scored **78.3%**, and that was useful. It showed that the auditor's checks for the rejected and estimate rules were barely tested: deleting those checks went unnoticed. That's the kind of gap coverage alone wouldn't show, so 27 tests were added across the auditor, evidence hash, maths, anchors and router, and the score reached 86.0%.
+The first run scored **78.3%**. It showed that the auditor's checks for the rejected and estimate rules were barely tested: deleting those checks went unnoticed. That's the kind of gap coverage alone wouldn't show, so 27 tests were added across the auditor, evidence hash, maths, anchors and router, and the score reached 86.0%.
 
 ### What it still misses
 

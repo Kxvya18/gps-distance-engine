@@ -259,8 +259,7 @@ class RecomputeServiceTest {
         TripEvidence evidence = simulator.generate(6).evidence();
         TripEvidence trip = withPings(evidence, evidence.pings());
 
-        // A fresh trip through a provider that is down. Answers cannot come from the cache
-        // because the expected result is checked against the real distance afterwards.
+        // The trip is moved first, so the cache cannot answer it while the provider is down.
         provider.setDown(true);
         TripResult degraded = trips.submit(shifted(trip));
         assertEquals(TripResult.Status.DEGRADED, degraded.status());

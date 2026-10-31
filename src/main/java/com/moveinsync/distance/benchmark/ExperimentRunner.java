@@ -167,7 +167,7 @@ public class ExperimentRunner {
         return sorted;
     }
 
-    // The first naive answer from the problem statement: add up the pings.
+    // First baseline: the sum of distances between pings.
     private static long naive(List<Ping> rawPings) {
         List<Ping> pings = sortedByTime(rawPings);
         double total = 0;
@@ -177,7 +177,7 @@ public class ExperimentRunner {
         return Math.round(total);
     }
 
-    // The second naive answer: ask the maps service about every gap, with no cleaning or anchors.
+    // Second baseline: route every gap, with no cleaning or anchors.
     private static long[] routeEveryGap(List<Ping> rawPings, FakeRoutingProvider provider) {
         List<Ping> pings = sortedByTime(rawPings);
         long total = 0;

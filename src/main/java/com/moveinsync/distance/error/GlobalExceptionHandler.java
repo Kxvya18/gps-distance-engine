@@ -20,8 +20,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.List;
 
-// Meaningful messages that leak nothing. A message may name a field, but it never repeats a
-// value from the request, so no phone, email or home location can come back or reach the logs.
+// A message may name a field, but it never repeats a value from the request, so no phone,
+// email or home location can come back or reach the logs.
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 

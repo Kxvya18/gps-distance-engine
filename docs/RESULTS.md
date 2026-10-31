@@ -4,7 +4,7 @@ Thirteen experiments, each asking one question about the engine. Every number he
 
 **Conditions:** Apple M2 with 8 cores (4 performance, 4 efficiency) and 16 GB RAM, Java 17, with other containers stopped. Each run used the same seed, so the same trips were replayed every time.
 
-**Honest scope:** accuracy and cost come from simulated trips and a fake maps service. They show how the system behaves under controlled conditions, and they aren't a claim about real roads. See [LIMITATIONS.md](LIMITATIONS.md).
+**Scope:** accuracy and cost come from simulated trips and a fake maps service. They show how the system behaves under controlled conditions, and they aren't a claim about real roads. See [LIMITATIONS.md](LIMITATIONS.md).
 
 ## Scorecard
 

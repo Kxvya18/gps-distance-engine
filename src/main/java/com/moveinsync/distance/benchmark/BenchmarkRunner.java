@@ -132,8 +132,8 @@ public class BenchmarkRunner {
         return count;
     }
 
-    // The naive answer from the problem statement: add up the pings. Sorting by time first
-    // is a kindness to the baseline, so the comparison does not overstate our result.
+    // Baseline: the sum of distances between pings. Pings are sorted first, so the
+    // comparison does not overstate the engine's advantage.
     private static long naiveMeters(List<Ping> rawPings) {
         List<Ping> pings = new ArrayList<>(rawPings);
         pings.sort(Comparator.comparingLong(Ping::timestampMillis));

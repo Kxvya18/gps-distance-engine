@@ -567,7 +567,7 @@ Each record gives the options, the decision, why, what it cost, and when it shou
 | No snapping | Exact | Almost no cache hits |
 
 **Decided:** Cells of about 55 m, with the provider always asked about the centre.
-**Why:** This is the subtle one. Caching by cell while asking about exact points would make the bill depend on cache contents, and the same trip could then bill differently on two runs.
+**Why:** Caching by cell while asking about exact points would make the bill depend on cache contents, and the same trip could then bill differently on two runs.
 **Cost:** Each endpoint can move by up to about 40 m.
 **Change when:** Measured accuracy on real data says cells should be smaller.
 
@@ -724,7 +724,7 @@ Each record gives the options, the decision, why, what it cost, and when it shou
 
 **Decided:** Token tenant, and a plain 404.
 **Why:** The case study says one client can never read another's data, and even knowing that a trip exists is a small leak.
-**Cost:** None worth noting.
+**Cost:** Every query must include the tenant.
 **Change when:** Never.
 
 ### D23. Employees see no coordinates

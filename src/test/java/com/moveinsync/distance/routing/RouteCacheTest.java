@@ -7,7 +7,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-// Tests for RouteCache.
 class RouteCacheTest {
 
     private final AtomicLong now = new AtomicLong(0);

@@ -54,9 +54,9 @@ public class PingCleaner {
         return accurate;
     }
 
-    // Comparing each ping to "the last good one" fails if the first ping is bad,
-    // because every good ping then looks like a teleport. So we build chains of
-    // pings that make sense together and keep the longest chain.
+    // Comparing each ping to the last good one fails if the first ping is bad, because
+    // every good ping then looks like a teleport. Keeping the longest chain of plausible
+    // pings avoids that.
     private List<Ping> dropTeleports(List<Ping> pings) {
         List<List<Ping>> chains = new ArrayList<>();
         for (Ping ping : pings) {
